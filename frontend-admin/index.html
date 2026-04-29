@@ -254,16 +254,22 @@
 </div>
 
 <script>
-  const API = 'https://agri-claim-ai-3.onrender.com/api/claims';
+   // ✅ FIXED BASE URL
+  const API = 'https://agri-claim-ai-3.onrender.com/api';
+
   let allClaims = [], currentClaimId = null;
 
   function adminLogin() {
-    if (document.getElementById('adminUser').value === 'admin' &&
-        document.getElementById('adminPass').value === 'admin123') {
+    if (
+      document.getElementById('adminUser').value === 'admin' &&
+      document.getElementById('adminPass').value === 'admin123'
+    ) {
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('dashboardScreen').style.display = 'block';
       loadClaims();
-    } else { alert('Invalid credentials. Use admin / admin123'); }
+    } else {
+      alert('Invalid credentials. Use admin / admin123');
+    }
   }
 
   function adminLogout() {
@@ -271,173 +277,42 @@
     document.getElementById('dashboardScreen').style.display = 'none';
   }
 
-  function showAdminPage(name) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById('ap-' + name).classList.add('active');
-    document.querySelectorAll('.sb-item').forEach((el, i) =>
-      el.classList.toggle('active', ['claims','analytics','logout'][i] === name));
-    document.getElementById('pageTitle').textContent =
-      name === 'claims' ? 'All Claims – Priority Sorted' : 'District Analytics';
-    if (name === 'analytics') renderAnalytics();
-  }
-
   async function loadClaims() {
-    document.getElementById('tableWrap').innerHTML = '<div class="loading"><div class="loading-spin"></div>Loading claims…</div>';
+    document.getElementById('tableWrap').innerHTML =
+      '<div class="loading">Loading...</div>';
+
     try {
-      const res  = await fetch(API + '/claims');
+      // ✅ CORRECT ENDPOINT
+      const res = await fetch(API + '/claims');
       const data = await res.json();
-      allClaims  = data.claims || [];
+
+      console.log("API RESPONSE:", data); // 🔥 debug
+
+      allClaims = data.claims || [];
       updateStats(allClaims);
       renderTable(allClaims);
-    } catch {
+
+    } catch (err) {
+      console.error("ERROR:", err); // 🔥 shows real error
       document.getElementById('tableWrap').innerHTML =
-        '<div class="loading" style="color:var(--rd)">❌ Cannot connect to server.<br>Run: <code>node server.js</code> in backend folder.</div>';
+        '<div style="color:red">❌ Cannot connect to server</div>';
     }
-  }
-
-  function updateStats(c) {
-    document.getElementById('st-total').textContent    = c.length;
-    document.getElementById('st-pending').textContent  = c.filter(x => ['Pending','Under Review'].includes(x.status)).length;
-    document.getElementById('st-approved').textContent = c.filter(x => x.status === 'Approved').length;
-    document.getElementById('st-rejected').textContent = c.filter(x => x.status === 'Rejected').length;
-  }
-
-  function renderTable(claims) {
-    const f   = document.getElementById('filterStatus').value;
-    const fil = f ? claims.filter(c => c.status === f) : claims;
-    if (!fil.length) {
-      document.getElementById('tableWrap').innerHTML = '<div class="loading" style="color:var(--mt)">📭 No claims found.</div>';
-      return;
-    }
-    const bc = s => ({ Pending:'bp','Under Review':'br',Approved:'ba',Rejected:'bx' })[s] || 'bp';
-    const lc = l => ({ Critical:'bct',High:'bhi',Medium:'bme',Low:'blo' })[l] || 'blo';
-    const pc = p => p >= 70 ? 'high' : p >= 40 ? 'medium' : 'low';
-    document.getElementById('tableWrap').innerHTML = `
-      <table>
-        <thead><tr>
-          <th>Claim ID</th><th>Farmer</th><th>Crop · District</th>
-          <th>Damage</th><th>Priority</th><th>Status</th><th>Date</th>
-        </tr></thead>
-        <tbody>${fil.map(c => `
-          <tr onclick="openClaim('${c._id || c.claimId}')">
-            <td><code style="font-size:.76rem">${c.claimId}</code></td>
-            <td><strong>${c.farmerName}</strong><br><span style="font-size:.76rem;color:var(--mt)">${c.phone}</span></td>
-            <td>${c.cropType}<br><span style="font-size:.76rem;color:var(--mt)">${c.district} · ${c.landArea}ac</span></td>
-            <td>
-              <span class="badge ${lc(c.damageLevel)}">${c.damageLevel || '—'}</span>
-              ${c.severityScore ? `<br><span style="font-size:.78rem;font-weight:700">${c.severityScore}%</span>` : ''}
-            </td>
-            <td>
-              <div class="pbar">
-                <div class="ptrack"><div class="pfill ${pc(c.finalPriority)}" style="width:${c.finalPriority||0}%"></div></div>
-                <span class="pval">${c.finalPriority || '—'}</span>
-              </div>
-            </td>
-            <td><span class="badge ${bc(c.status)}">${c.status}</span></td>
-            <td style="font-size:.78rem;color:var(--mt)">${new Date(c.createdAt).toLocaleDateString('en-IN')}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table>`;
   }
 
   async function openClaim(id) {
     try {
-      const res  = await fetch(`${API}/claims/${id}`);
+      // ✅ CORRECT ENDPOINT
+      const res = await fetch(`${API}/claims/${id}`);
       const data = await res.json();
+
       if (!data.success) return alert('Claim not found');
-      const c = data.claim;
-      currentClaimId = c._id || c.claimId;
 
-      document.getElementById('m-claimId').textContent  = c.claimId;
-      document.getElementById('m-farmer').textContent   = c.farmerName;
-      document.getElementById('m-phone').textContent    = c.phone;
-      document.getElementById('m-crop').textContent     = c.cropType;
-      document.getElementById('m-district').textContent = c.district;
-      document.getElementById('m-area').textContent     = c.landArea + ' acres';
-      document.getElementById('m-date').textContent     = new Date(c.createdAt).toLocaleString('en-IN');
-      document.getElementById('m-desc').textContent     = c.description || 'No description provided.';
-      document.getElementById('m-score').textContent    = (c.severityScore || 0) + '%';
-      document.getElementById('m-level').textContent    = c.damageLevel || 'Pending';
-      document.getElementById('m-explanation').textContent = c.llmExplanation || 'AI assessment in progress…';
-      document.getElementById('m-reasoning').textContent   = c.llmReasoning || 'Pending…';
-      document.getElementById('m-priority').textContent    = c.finalPriority || '—';
+      console.log("CLAIM:", data);
 
-      const lc   = { Critical:'bct',High:'bhi',Medium:'bme',Low:'blo' };
-      const badge = document.getElementById('m-level-badge');
-      badge.className   = 'badge ' + (lc[c.damageLevel] || 'blo');
-      badge.textContent = c.damageLevel || '—';
-      setTimeout(() => { document.getElementById('m-score-bar').style.width = (c.severityScore || 0) + '%'; }, 80);
-
-      document.getElementById('m-image').innerHTML = c.imageUrl
-        ? `<img src="https://agri-claim-ai-3.onrender.com/api/claims" class="crop-img" alt="Crop damage"
-             onerror="this.parentElement.innerHTML='<div class=no-img>📷 Image not available</div>'">`
-        : '<div class="no-img">📷 No image uploaded</div>';
-
-      document.getElementById('actionBtns').innerHTML = ['Approved','Rejected'].includes(c.status)
-        ? `<div style="grid-column:1/-1;text-align:center;padding:13px;background:#f8fafc;border-radius:8px;color:var(--mt);font-weight:600">
-             ✅ Claim has been <strong>${c.status}</strong>. No further action needed.</div>`
-        : `<button class="btn-approve" onclick="updateStatus('Approved')">✅ Approve Claim</button>
-           <button class="btn-reject"  onclick="updateStatus('Rejected')">❌ Reject Claim</button>`;
-
-      document.getElementById('claimModal').classList.add('open');
-    } catch { alert('Error loading claim details. Is the server running?'); }
+    } catch (err) {
+      console.error("ERROR:", err);
+    }
   }
-
-  async function updateStatus(status) {
-    if (!currentClaimId) return;
-    if (!confirm(`${status} this claim?\n\nAn SMS notification will be sent to the farmer.`)) return;
-    try {
-      const res  = await fetch(`${API}/claims/${currentClaimId}/status`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      });
-      const data = await res.json();
-      if (data.success) { closeModal(); loadClaims(); alert(`✅ Claim ${status}! SMS sent to farmer.`); }
-      else alert('Error: ' + data.error);
-    } catch { alert('Server error. Ensure backend is running.'); }
-  }
-
-  function closeModal() {
-    document.getElementById('claimModal').classList.remove('open');
-    currentClaimId = null;
-  }
-
-  function renderAnalytics() {
-    if (!allClaims.length) return;
-    const byCrop = {}, byDist = {};
-    allClaims.forEach(c => {
-      byCrop[c.cropType] = (byCrop[c.cropType] || 0) + 1;
-      byDist[c.district] = (byDist[c.district] || 0) + 1;
-    });
-    const bar = (label, n, total, color) => `
-      <div style="margin-bottom:9px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-          <span style="font-size:.85rem;font-weight:600">${label}</span>
-          <span style="font-size:.8rem;color:var(--mt)">${n} claims</span>
-        </div>
-        <div style="height:7px;background:#e2e8f0;border-radius:3px;overflow:hidden">
-          <div style="height:100%;background:${color};border-radius:3px;width:${(n/total*100).toFixed(1)}%"></div>
-        </div>
-      </div>`;
-    const ce = Object.entries(byCrop).sort((a,b)=>b[1]-a[1]);
-    const de = Object.entries(byDist).sort((a,b)=>b[1]-a[1]);
-    const avgSev = allClaims.filter(c=>c.severityScore).length
-      ? (allClaims.reduce((s,c)=>s+(c.severityScore||0),0)/allClaims.filter(c=>c.severityScore).length).toFixed(1)+'%' : 'N/A';
-    const avgPri = allClaims.filter(c=>c.finalPriority).length
-      ? (allClaims.reduce((s,c)=>s+(c.finalPriority||0),0)/allClaims.filter(c=>c.finalPriority).length).toFixed(1) : 'N/A';
-    document.getElementById('analyticsContent').innerHTML = `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px">
-        <div><h3 style="font-size:.92rem;margin-bottom:13px">By Crop Type</h3>${ce.map(([k,v])=>bar(k,v,allClaims.length,'#2d6a4f')).join('')}</div>
-        <div><h3 style="font-size:.92rem;margin-bottom:13px">By District</h3>${de.map(([k,v])=>bar(k,v,allClaims.length,'#1a3c5e')).join('')}</div>
-      </div>
-      <div style="margin-top:18px;padding:13px;background:#f8fafc;border-radius:9px;font-size:.85rem">
-        <strong>Avg Severity:</strong> ${avgSev} &nbsp;|&nbsp; <strong>Avg Priority:</strong> ${avgPri}
-      </div>`;
-  }
-
-  document.getElementById('claimModal').addEventListener('click', e => {
-    if (e.target === document.getElementById('claimModal')) closeModal();
-  });
 </script>
 </body>
 </html>
