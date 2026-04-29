@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AgriClaim AI – Farmer Portal</title>
+  <style>
+    :root {
+      --green: #2d6a4f; --gl: #52b788; --gp: #d8f3dc;
+      --amber: #f4a261; --red: #e63946;
+      --bg: #f0faf3; --card: #ffffff; --text: #1b2d1f; --muted: #6b8f71;
+      --shadow: 0 4px 20px rgba(45,106,79,.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* NAV */
+    nav { background: var(--green); padding: 0 18px; display: flex; align-items: center; justify-content: space-between; height: 62px; box-shadow: 0 2px 10px rgba(0,0,0,.15); position: sticky; top: 0; z-index: 10; }
+    .nav-logo { color: #fff; font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .np { background: rgba(255,255,255,.15); color: #fff; border: none; padding: 5px 14px; border-radius: 20px; cursor: pointer; font-size: .8rem; font-weight: 500; transition: background .2s; font-family: inherit; }
+    .np.active, .np:hover { background: rgba(255,255,255,.3); }
+
+    /* HERO */
+    .hero { background: linear-gradient(135deg, var(--green), #40916c); color: #fff; text-align: center; padding: 44px 18px 52px; }
+    .hero h1 { font-size: 2rem; font-weight: 800; margin-bottom: 10px; }
+    .hero p { font-size: .92rem; opacity: .88; max-width: 460px; margin: 0 auto; }
+    .scheme-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.2); border-radius: 20px; padding: 3px 14px; font-size: .75rem; margin-bottom: 14px; }
+
+    /* LAYOUT */
+    main { max-width: 640px; margin: -24px auto 48px; padding: 0 14px; }
+    .card { background: var(--card); border-radius: 16px; padding: 24px; box-shadow: var(--shadow); margin-bottom: 16px; }
+    .card-title { font-size: 1rem; font-weight: 700; color: var(--green); margin-bottom: 18px; display: flex; align-items: center; gap: 7px; }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* FORM */
+    .fg { margin-bottom: 15px; }
+    label { display: block; font-size: .78rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .05em; }
+    input, select, textarea { width: 100%; padding: 11px 13px; border: 2px solid #e2f0e6; border-radius: 10px; font-size: .93rem; background: #fafffe; outline: none; color: var(--text); font-family: inherit; transition: border-color .2s, box-shadow .2s; }
+    input:focus, select:focus, textarea:focus { border-color: var(--gl); box-shadow: 0 0 0 3px rgba(82,183,136,.15); }
+    textarea { resize: vertical; min-height: 86px; }
+
+    /* UPLOAD */
+    .upload-zone { border: 2px dashed var(--gl); border-radius: 12px; padding: 28px; text-align: center; background: var(--gp); cursor: pointer; position: relative; transition: all .2s; }
+    .upload-zone:hover { background: #c8efd4; border-color: var(--green); }
+    .upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .upload-icon { font-size: 2.3rem; margin-bottom: 8px; }
+    .upload-zone p { color: var(--muted); font-size: .85rem; }
+    #imgPreview { max-width: 100%; max-height: 190px; border-radius: 10px; margin-top: 12px; display: none; }
+
+    /* BUTTON */
+    .btn { width: 100%; padding: 13px; background: var(--green); color: #fff; border: none; border-radius: 12px; font-size: .97rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: inherit; transition: background .2s, transform .1s; }
+    .btn:hover { background: #1b4332; }
+    .btn:active { transform: scale(.98); }
+    .btn:disabled { background: #9ca3af; cursor: not-allowed; }
+
+    /* STATUS BADGES */
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: .76rem; font-weight: 600; }
+    .badge-pending  { background: #fff3cd; color: #856404; }
+    .badge-review   { background: #cfe2ff; color: #084298; }
+    .badge-approved { background: #d1e7dd; color: #0a3622; }
+    .badge-rejected { background: #f8d7da; color: #842029; }
+
+    /* STATUS ROWS */
+    .srow { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f4f0; }
+    .srow:last-child { border-bottom: none; }
+    .slabel { font-size: .8rem; color: var(--muted); font-weight: 500; }
+    .svalue { font-size: .9rem; font-weight: 600; }
+
+    /* DAMAGE METER */
+    .meter-bar { height: 10px; background: #e8f5e9; border-radius: 5px; overflow: hidden; margin-top: 5px; }
+    .meter-fill { height: 100%; border-radius: 5px; transition: width 1.2s ease; }
+    .meter-fill.low      { background: #52b788; }
+    .meter-fill.medium   { background: var(--amber); }
+    .meter-fill.high     { background: #e76f51; }
+    .meter-fill.critical { background: var(--red); }
+
+    /* AI BOX */
+    .ai-box { background: linear-gradient(135deg, #f0faf3, #e8f5e9); border-left: 4px solid var(--gl); border-radius: 0 10px 10px 0; padding: 13px 15px; font-size: .86rem; line-height: 1.65; margin-top: 7px; }
+
+    /* SPINNER */
+    .spin { width: 21px; height: 21px; border: 3px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px); background: #1b2d1f; color: #fff; padding: 10px 22px; border-radius: 30px; font-size: .85rem; font-weight: 500; transition: transform .3s; z-index: 999; box-shadow: 0 4px 20px rgba(0,0,0,.2); white-space: nowrap; }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* TRACK */
+    .track-row { display: flex; gap: 9px; }
+    .track-row input { flex: 1; }
+    .track-row button { padding: 11px 16px; background: var(--green); color: #fff; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; font-family: inherit; white-space: nowrap; }
+    .track-row button:hover { background: #1b4332; }
+
+    /* STEPS */
+    .steps { display: flex; margin-bottom: 22px; }
+    .step { flex: 1; text-align: center; position: relative; }
+    .step::after { content: ''; position: absolute; top: 12px; left: 60%; width: 80%; height: 2px; background: #e2f0e6; }
+    .step:last-child::after { display: none; }
+    .step-dot { width: 25px; height: 25px; border-radius: 50%; background: #e2f0e6; color: var(--muted); font-size: .7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 4px; position: relative; z-index: 1; }
+    .step.active .step-dot { background: var(--green); color: #fff; }
+    .step.done .step-dot   { background: var(--gl); color: #fff; }
+    .step-label { font-size: .66rem; color: var(--muted); }
+    .step.active .step-label { color: var(--green); font-weight: 600; }
+
+    @media (max-width: 480px) {
+      .hero h1 { font-size: 1.6rem; }
+      .card { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">🌾 AgriClaim AI</div>
+  <div style="display:flex;gap:5px">
+    <button class="np active" onclick="showPage('login')">Login</button>
+    <button class="np" onclick="showPage('submit')">Submit</button>
+    <button class="np" onclick="showPage('status')">Track</button>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="scheme-badge">🇮🇳 PM Fasal Bima Yojana</div>
+  <h1>AgriClaim AI</h1>
+  <p>Smart Crop Damage Assessment powered by Artificial Intelligence</p>
+</div>
+
+<main>
+
+  <!-- LOGIN -->
+  <div id="page-login" class="page active">
+    <div class="card">
+      <div class="card-title">👨‍🌾 Farmer Login</div>
+      <div class="fg"><label>Mobile Number *</label><input type="tel" id="lPhone" placeholder="10-digit mobile number" maxlength="10"/></div>
+      <div class="fg"><label>Farmer Name *</label><input type="text" id="lName" placeholder="Enter your full name"/></div>
+      <button class="btn" onclick="doLogin()">🔐 Login to Portal</button>
+    </div>
+    <div class="card" style="text-align:center;background:linear-gradient(135deg,#d8f3dc,#b7e4c7)">
+      <p style="font-size:.8rem;color:var(--green);font-weight:600">
+        🔒 Secured under PM Fasal Bima Yojana Digital Platform<br>
+        <span style="font-weight:400;color:var(--muted)">No registration required · Aadhaar-linked mobile</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- SUBMIT CLAIM -->
+  <div id="page-submit" class="page">
+    <div class="steps">
+      <div class="step done"><div class="step-dot">✓</div><div class="step-label">Login</div></div>
+      <div class="step active"><div class="step-dot">2</div><div class="step-label">Details</div></div>
+      <div class="step"><div class="step-dot">3</div><div class="step-label">Upload</div></div>
+      <div class="step"><div class="step-dot">4</div><div class="step-label">Submit</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📋 Claim Details</div>
+      <div class="fg"><label>Farmer Name *</label><input type="text" id="farmerName" placeholder="Full name"/></div>
+      <div class="fg"><label>Mobile Number *</label><input type="tel" id="farmerPhone" placeholder="10-digit mobile" maxlength="10"/></div>
+      <div class="fg">
+        <label>Crop Type *</label>
+        <select id="cropType">
+          <option value="">Select crop</option>
+          <option>Wheat</option><option>Rice</option><option>Cotton</option><option>Sugarcane</option>
+          <option>Maize</option><option>Soybean</option><option>Groundnut</option><option>Pulses</option>
+          <option>Tomato</option><option>Onion</option><option>Potato</option><option>Other</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>District *</label>
+        <select id="district">
+          <option value="">Select district</option>
+          <option>Nashik</option><option>Pune</option><option>Nagpur</option><option>Aurangabad</option>
+          <option>Solapur</option><option>Kolhapur</option><option>Amravati</option><option>Jalgaon</option>
+          <option>Latur</option><option>Osmanabad</option><option>Nanded</option><option>Wardha</option>
+          <option>Ahmednagar</option><option>Sangli</option><option>Satara</option>
+        </select>
+      </div>
+      <div class="fg"><label>Land Area (Acres) *</label><input type="number" id="landArea" placeholder="e.g. 3.5" min="0.1" step="0.1"/></div>
+      <div class="fg"><label>Damage Description</label><textarea id="description" placeholder="Describe what happened – flood, hailstorm, pest attack, drought, fire…"></textarea></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📸 Upload Crop Damage Photo</div>
+      <div class="upload-zone">
+        <input type="file" id="imageFile" accept="image/*" onchange="previewImage(event)"/>
+        <div class="upload-icon" id="uploadIcon">📷</div>
+        <p id="uploadText"><strong>Tap to upload photo</strong></p>
+        <p>JPG, PNG, WebP · Max 10 MB</p>
+        <img id="imgPreview" alt="preview"/>
+      </div>
+    </div>
+    <button class="btn" id="submitBtn" onclick="submitClaim()">🚀 Submit Claim for AI Assessment</button>
+  </div>
+
+  <!-- TRACK STATUS -->
+  <div id="page-status" class="page">
+    <div class="card">
+      <div class="card-title">🔍 Track Your Claim</div>
+      <div class="track-row">
+        <input type="text" id="claimIdInput" placeholder="Enter Claim ID (PMFBY-XXXXXX-XXX)"/>
+        <button onclick="trackClaim()">Track</button>
+      </div>
+    </div>
+    <div id="statusResult" style="display:none">
+      <div class="card">
+        <div class="card-title">📄 Claim Status</div>
+        <div class="srow"><span class="slabel">Claim ID</span><span class="svalue" id="s-claimId">—</span></div>
+        <div class="srow"><span class="slabel">Farmer</span><span class="svalue" id="s-farmer">—</span></div>
+        <div class="srow"><span class="slabel">Crop · District · Area</span><span class="svalue" id="s-crop">—</span></div>
+        <div class="srow"><span class="slabel">Status</span><span id="s-status">—</span></div>
+        <div class="srow"><span class="slabel">Submitted</span><span class="svalue" id="s-date">—</span></div>
+      </div>
+      <div class="card" id="aiResultCard" style="display:none">
+        <div class="card-title">🤖 AI Assessment Result</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-weight:600">Damage Severity</span>
+          <span id="s-score" style="font-size:1.4rem;font-weight:800;color:var(--green)">—</span>
+        </div>
+        <div class="meter-bar"><div class="meter-fill" id="s-meter" style="width:0%"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px">
+          <span style="font-size:.7rem;color:var(--muted)">Low</span>
+          <span style="font-size:.7rem;color:var(--muted)"><span id="s-level">—</span> Damage</span>
+          <span style="font-size:.7rem;color:var(--muted)">Critical</span>
+        </div>
+        <div style="margin-top:14px">
+          <div style="font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:5px">AI EXPLANATION</div>
+          <div class="ai-box" id="s-explanation">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+<div id="toast" class="toast"></div>
+
+<script>
+  const API = 'http://localhost:5000/api';
+
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    document.querySelectorAll('.np').forEach((b, i) =>
+      b.classList.toggle('active', ['login','submit','status'][i] === name));
+  }
+
+  function toast(msg, ms = 3500) {
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), ms);
+  }
+
+  function doLogin() {
+    const phone = document.getElementById('lPhone').value.trim();
+    const name  = document.getElementById('lName').value.trim();
+    if (!phone || phone.length < 10) return toast('⚠️ Enter a valid 10-digit mobile number');
+    if (!name) return toast('⚠️ Enter your name');
+    document.getElementById('farmerName').value  = name;
+    document.getElementById('farmerPhone').value = phone;
+    toast(`✅ Welcome, ${name}!`);
+    setTimeout(() => showPage('submit'), 700);
+  }
+
+  function previewImage(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const prev = document.getElementById('imgPreview');
+    prev.src = URL.createObjectURL(file);
+    prev.style.display = 'block';
+    document.getElementById('uploadIcon').textContent = '✅';
+    document.getElementById('uploadText').innerHTML = `<strong>${file.name}</strong>`;
+  }
+
+  async function submitClaim() {
+    const btn         = document.getElementById('submitBtn');
+    const farmerName  = document.getElementById('farmerName').value.trim();
+    const phone       = document.getElementById('farmerPhone').value.trim();
+    const cropType    = document.getElementById('cropType').value;
+    const district    = document.getElementById('district').value;
+    const landArea    = document.getElementById('landArea').value;
+    const description = document.getElementById('description').value;
+    const imageFile   = document.getElementById('imageFile').files[0];
+
+    if (!farmerName || !phone || !cropType || !district || !landArea)
+      return toast('⚠️ Please fill all required fields');
+
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spin"></div> Submitting & Running AI…';
+
+    const fd = new FormData();
+    fd.append('farmerName', farmerName); fd.append('phone', phone);
+    fd.append('cropType', cropType);     fd.append('district', district);
+    fd.append('landArea', landArea);     fd.append('description', description);
+    if (imageFile) fd.append('image', imageFile);
+
+    try {
+      const res  = await fetch(`${API}/claims`, { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.success) {
+        toast(`✅ Claim ${data.claim.claimId} submitted! SMS sent to ${phone}.`, 5000);
+        document.getElementById('claimIdInput').value = data.claim.claimId;
+        setTimeout(() => { showPage('status'); trackClaim(); }, 1200);
+      } else {
+        toast('❌ ' + (data.error || 'Submission failed'));
+      }
+    } catch {
+      toast('❌ Cannot reach server. Run: node server.js');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '🚀 Submit Claim for AI Assessment';
+    }
+  }
+
+  async function trackClaim() {
+    const id = document.getElementById('claimIdInput').value.trim();
+    if (!id) return toast('⚠️ Enter your Claim ID');
+    try {
+      const res  = await fetch(`${API}/claims/${id}`);
+      const data = await res.json();
+      if (!data.success) return toast('❌ Claim not found: ' + id);
+
+      const c = data.claim;
+      document.getElementById('statusResult').style.display = 'block';
+      document.getElementById('s-claimId').textContent = c.claimId;
+      document.getElementById('s-farmer').textContent  = c.farmerName;
+      document.getElementById('s-crop').textContent    = `${c.cropType} · ${c.district} · ${c.landArea} ac`;
+      document.getElementById('s-date').textContent    = new Date(c.createdAt).toLocaleDateString('en-IN');
+
+      const stEl = document.getElementById('s-status');
+      const cls  = { Pending:'badge-pending','Under Review':'badge-review',Approved:'badge-approved',Rejected:'badge-rejected' };
+      stEl.className = 'badge ' + (cls[c.status] || 'badge-pending');
+      stEl.textContent = c.status;
+
+      if (c.aiProcessed) {
+        document.getElementById('aiResultCard').style.display = 'block';
+        document.getElementById('s-score').textContent       = c.severityScore + '%';
+        document.getElementById('s-level').textContent       = c.damageLevel;
+        document.getElementById('s-explanation').textContent = c.llmExplanation || '—';
+        const m = document.getElementById('s-meter');
+        m.className = 'meter-fill ' + (c.damageLevel || 'medium').toLowerCase();
+        setTimeout(() => m.style.width = c.severityScore + '%', 100);
+      } else {
+        document.getElementById('aiResultCard').style.display = 'block';
+        document.getElementById('s-score').textContent       = '…';
+        document.getElementById('s-explanation').textContent = '⏳ AI assessment in progress. Refresh in a moment.';
+      }
+    } catch { toast('❌ Cannot connect to server'); }
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AgriClaim AI – Admin Dashboard</title>
+  <style>
+    :root {
+      --pr:#1a3c5e; --ac:#2d6a4f; --gn:#52b788; --am:#f4a261; --rd:#e63946;
+      --bg:#f1f5f9; --cd:#fff; --tx:#1e293b; --mt:#64748b; --bd:#e2e8f0;
+      --sh:0 2px 12px rgba(0,0,0,.07);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--tx); }
+
+    /* SIDEBAR */
+    .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 235px; background: var(--pr); padding: 22px 0; z-index: 100; }
+    .sb-logo { padding: 0 18px 20px; color: #fff; font-size: 1rem; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,.1); }
+    .sb-logo span { display: block; font-size: .7rem; opacity: .5; font-weight: 400; margin-top: 1px; }
+    .sb-nav { padding: 10px 0; }
+    .sb-item { display: flex; align-items: center; gap: 9px; padding: 9px 18px; color: rgba(255,255,255,.65); cursor: pointer; font-size: .85rem; transition: all .2s; }
+    .sb-item:hover, .sb-item.active { background: rgba(255,255,255,.1); color: #fff; }
+    .sb-item .ic { font-size: 1rem; width: 20px; }
+
+    /* MAIN */
+    .main { margin-left: 235px; min-height: 100vh; }
+    .topbar { background: var(--cd); padding: 13px 24px; border-bottom: 1px solid var(--bd); display: flex; align-items: center; justify-content: space-between; box-shadow: var(--sh); }
+    .topbar h1 { font-size: 1.05rem; font-weight: 700; }
+    .avatar { width: 32px; height: 32px; background: var(--ac); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: .82rem; }
+    .content { padding: 24px; }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* STATS */
+    .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 13px; margin-bottom: 20px; }
+    .stat-card { background: var(--cd); border-radius: 11px; padding: 16px; box-shadow: var(--sh); border-left: 4px solid transparent; }
+    .stat-card.blue  { border-left-color: #3b82f6; }
+    .stat-card.green { border-left-color: var(--gn); }
+    .stat-card.amber { border-left-color: var(--am); }
+    .stat-card.red   { border-left-color: var(--rd); }
+    .stat-label { font-size: .73rem; color: var(--mt); font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+    .stat-value { font-size: 1.85rem; font-weight: 800; }
+    .stat-sub   { font-size: .7rem; color: var(--mt); margin-top: 2px; }
+
+    /* CARD / TABLE */
+    .card { background: var(--cd); border-radius: 11px; box-shadow: var(--sh); overflow: hidden; }
+    .card-header { padding: 13px 17px; border-bottom: 1px solid var(--bd); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 9px; }
+    .card-header h2 { font-size: .92rem; font-weight: 700; }
+    .refresh-btn { padding: 5px 13px; background: var(--ac); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: .8rem; font-weight: 600; font-family: inherit; }
+    .refresh-btn:hover { background: #1b4332; }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: #f8fafc; }
+    th { padding: 10px 13px; text-align: left; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--mt); border-bottom: 1px solid var(--bd); }
+    td { padding: 12px 13px; border-bottom: 1px solid var(--bd); font-size: .85rem; }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #f8fafc; cursor: pointer; }
+
+    /* PRIORITY BAR */
+    .pbar { display: flex; align-items: center; gap: 7px; }
+    .ptrack { flex: 1; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+    .pfill { height: 100%; border-radius: 3px; }
+    .pfill.high   { background: var(--rd); }
+    .pfill.medium { background: var(--am); }
+    .pfill.low    { background: var(--gn); }
+    .pval { font-weight: 700; font-size: .8rem; min-width: 24px; }
+
+    /* BADGES */
+    .badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: .72rem; font-weight: 600; }
+    .bp { background: #fff3cd; color: #856404; }
+    .br { background: #cfe2ff; color: #084298; }
+    .ba { background: #d1e7dd; color: #0a3622; }
+    .bx { background: #f8d7da; color: #842029; }
+    .bct { background: #fde8e8; color: #842029; }
+    .bhi { background: #fef3cd; color: #856404; }
+    .bme { background: #d1ecf1; color: #0c5460; }
+    .blo { background: #d4edda; color: #155724; }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 500; display: none; align-items: center; justify-content: center; padding: 14px; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--cd); border-radius: 15px; width: 100%; max-width: 660px; max-height: 90vh; overflow-y: auto; }
+    .modal-header { padding: 17px 21px; border-bottom: 1px solid var(--bd); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--cd); z-index: 1; }
+    .modal-header h2 { font-size: 1rem; font-weight: 700; }
+    .close-btn { background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--mt); }
+    .close-btn:hover { color: var(--tx); }
+    .modal-body { padding: 20px; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-bottom: 16px; }
+    .dl { font-size: .72rem; color: var(--mt); font-weight: 600; text-transform: uppercase; margin-bottom: 2px; }
+    .dv { font-size: .9rem; font-weight: 500; }
+    .crop-img { width: 100%; max-height: 230px; object-fit: cover; border-radius: 10px; margin-bottom: 17px; }
+    .no-img { background: #f8fafc; border-radius: 10px; padding: 26px; text-align: center; color: var(--mt); margin-bottom: 17px; font-size: .88rem; }
+    .ai-section { background: linear-gradient(135deg,#f0fdf4,#dcfce7); border-radius: 9px; padding: 13px; margin-bottom: 13px; }
+    .ai-title { font-size: .73rem; font-weight: 700; text-transform: uppercase; color: var(--ac); margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+    .ai-section p { font-size: .85rem; line-height: 1.6; }
+    .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-top: 17px; }
+    .btn-approve, .btn-reject { padding: 11px; border: none; border-radius: 9px; font-size: .92rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .btn-approve { background: var(--ac); color: #fff; } .btn-approve:hover { background: #1b4332; }
+    .btn-reject  { background: var(--rd); color: #fff; } .btn-reject:hover  { background: #b02030; }
+
+    /* LOADING */
+    .loading { text-align: center; padding: 36px; color: var(--mt); }
+    .loading-spin { width: 36px; height: 36px; border: 3px solid var(--bd); border-top-color: var(--ac); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 10px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* LOGIN SCREEN */
+    .login-wrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--pr); }
+    .login-card { background: var(--cd); border-radius: 18px; padding: 36px; width: 100%; max-width: 390px; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+    .login-logo { text-align: center; margin-bottom: 24px; }
+    .login-logo h1 { font-size: 1.6rem; font-weight: 800; color: var(--pr); }
+    .login-logo p  { color: var(--mt); font-size: .85rem; }
+    .lfg { margin-bottom: 13px; }
+    .lfg label { display: block; font-size: .78rem; font-weight: 600; color: var(--mt); margin-bottom: 4px; }
+    .lfg input { width: 100%; padding: 10px 13px; border: 2px solid var(--bd); border-radius: 8px; font-size: .92rem; outline: none; font-family: inherit; }
+    .lfg input:focus { border-color: var(--ac); }
+    .login-btn { width: 100%; padding: 12px; background: var(--pr); color: #fff; border: none; border-radius: 10px; font-size: .92rem; font-weight: 700; cursor: pointer; margin-top: 5px; font-family: inherit; transition: background .2s; }
+    .login-btn:hover { background: var(--ac); }
+    .filter-sel { padding: 5px 9px; border: 1px solid var(--bd); border-radius: 6px; font-size: .8rem; outline: none; background: var(--cd); font-family: inherit; }
+
+    @media (max-width: 900px) { .sidebar { width: 55px; } .sb-logo, .sb-item span { display: none; } .main { margin-left: 55px; } .stats-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 600px) { .detail-grid { grid-template-columns: 1fr; } .action-btns { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <div style="font-size:2.6rem;margin-bottom:6px">🌾</div>
+      <h1>AgriClaim AI</h1>
+      <p>District Officer Dashboard</p>
+    </div>
+    <div class="lfg"><label>Username</label><input type="text" id="adminUser" value="admin"/></div>
+    <div class="lfg"><label>Password</label><input type="password" id="adminPass" value="admin123"/></div>
+    <button class="login-btn" onclick="adminLogin()">🔐 Login to Dashboard</button>
+    <p style="text-align:center;margin-top:12px;font-size:.76rem;color:var(--mt)">Demo credentials: admin / admin123</p>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboardScreen" style="display:none">
+  <div class="sidebar">
+    <div class="sb-logo">🌾 AgriClaim AI<span>Admin Portal</span></div>
+    <nav class="sb-nav">
+      <div class="sb-item active" onclick="showAdminPage('claims')"><span class="ic">📋</span><span>All Claims</span></div>
+      <div class="sb-item" onclick="showAdminPage('analytics')"><span class="ic">📊</span><span>Analytics</span></div>
+      <div class="sb-item" onclick="adminLogout()"><span class="ic">🚪</span><span>Logout</span></div>
+    </nav>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <h1 id="pageTitle">All Claims – Priority Sorted</h1>
+      <div style="display:flex;align-items:center;gap:11px">
+        <span style="font-size:.8rem;color:var(--mt)">District Officer</span>
+        <div class="avatar">DO</div>
+      </div>
+    </div>
+    <div class="content">
+
+      <!-- CLAIMS PAGE -->
+      <div id="ap-claims" class="page active">
+        <div class="stats-grid">
+          <div class="stat-card blue"><div class="stat-label">Total Claims</div><div class="stat-value" id="st-total">—</div><div class="stat-sub">All time</div></div>
+          <div class="stat-card amber"><div class="stat-label">Pending/Review</div><div class="stat-value" id="st-pending">—</div><div class="stat-sub">Awaiting action</div></div>
+          <div class="stat-card green"><div class="stat-label">Approved</div><div class="stat-value" id="st-approved">—</div><div class="stat-sub">Processed</div></div>
+          <div class="stat-card red"><div class="stat-label">Rejected</div><div class="stat-value" id="st-rejected">—</div><div class="stat-sub">Not eligible</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h2>📋 Claims Queue (Sorted by Priority)</h2>
+            <div style="display:flex;gap:7px;align-items:center">
+              <select class="filter-sel" id="filterStatus" onchange="renderTable(allClaims)">
+                <option value="">All Status</option>
+                <option>Pending</option><option>Under Review</option><option>Approved</option><option>Rejected</option>
+              </select>
+              <button class="refresh-btn" onclick="loadClaims()">🔄 Refresh</button>
+            </div>
+          </div>
+          <div id="tableWrap"><div class="loading"><div class="loading-spin"></div>Loading claims…</div></div>
+        </div>
+      </div>
+
+      <!-- ANALYTICS PAGE -->
+      <div id="ap-analytics" class="page">
+        <div class="card" style="padding:22px">
+          <h2 style="margin-bottom:18px">📊 District Analytics</h2>
+          <div id="analyticsContent"><p style="color:var(--mt)">Load claims first, then switch to this tab.</p></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- CLAIM DETAIL MODAL -->
+<div class="modal-overlay" id="claimModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="m-claimId">Claim Details</h2>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="m-image"></div>
+      <div class="detail-grid">
+        <div><div class="dl">Farmer</div><div class="dv" id="m-farmer">—</div></div>
+        <div><div class="dl">Phone</div><div class="dv" id="m-phone">—</div></div>
+        <div><div class="dl">Crop Type</div><div class="dv" id="m-crop">—</div></div>
+        <div><div class="dl">District</div><div class="dv" id="m-district">—</div></div>
+        <div><div class="dl">Land Area</div><div class="dv" id="m-area">—</div></div>
+        <div><div class="dl">Submitted</div><div class="dv" id="m-date">—</div></div>
+      </div>
+      <div style="margin-bottom:15px"><div class="dl">Farmer's Description</div><div class="dv" id="m-desc" style="font-style:italic;color:var(--mt)"></div></div>
+
+      <div class="ai-section">
+        <div class="ai-title">👁️ AI Vision Analysis</div>
+        <div style="display:flex;gap:14px;align-items:center;margin-bottom:9px">
+          <div>
+            <div style="font-size:1.8rem;font-weight:800" id="m-score">—</div>
+            <div style="font-size:.74rem;color:var(--mt)">Severity Score</div>
+          </div>
+          <div style="flex:1">
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+              <span style="font-size:.83rem;font-weight:600" id="m-level">—</span>
+              <span class="badge" id="m-level-badge">—</span>
+            </div>
+            <div style="height:9px;background:#e2e8f0;border-radius:4px;overflow:hidden">
+              <div id="m-score-bar" style="height:100%;background:var(--ac);border-radius:4px;transition:width .8s;width:0%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-section">
+        <div class="ai-title">🧠 LLM Assessment</div>
+        <p id="m-explanation">—</p>
+      </div>
+
+      <div class="ai-section" style="background:linear-gradient(135deg,#fffbeb,#fef9c3)">
+        <div class="ai-title" style="color:#92400e">⚡ Priority Reasoning</div>
+        <p id="m-reasoning" style="font-style:italic">—</p>
+        <div style="margin-top:9px;display:flex;align-items:center;gap:7px">
+          <span style="font-size:.81rem;color:var(--mt)">Final Priority Score:</span>
+          <span style="font-size:1.35rem;font-weight:800" id="m-priority">—</span>
+          <span style="font-size:.76rem;color:var(--mt)">/100</span>
+        </div>
+      </div>
+
+      <div id="actionBtns" class="action-btns">
+        <button class="btn-approve" onclick="updateStatus('Approved')">✅ Approve Claim</button>
+        <button class="btn-reject"  onclick="updateStatus('Rejected')">❌ Reject Claim</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = 'http://localhost:5000/api';
+  let allClaims = [], currentClaimId = null;
+
+  function adminLogin() {
+    if (document.getElementById('adminUser').value === 'admin' &&
+        document.getElementById('adminPass').value === 'admin123') {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('dashboardScreen').style.display = 'block';
+      loadClaims();
+    } else { alert('Invalid credentials. Use admin / admin123'); }
+  }
+
+  function adminLogout() {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('dashboardScreen').style.display = 'none';
+  }
+
+  function showAdminPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('ap-' + name).classList.add('active');
+    document.querySelectorAll('.sb-item').forEach((el, i) =>
+      el.classList.toggle('active', ['claims','analytics','logout'][i] === name));
+    document.getElementById('pageTitle').textContent =
+      name === 'claims' ? 'All Claims – Priority Sorted' : 'District Analytics';
+    if (name === 'analytics') renderAnalytics();
+  }
+
+  async function loadClaims() {
+    document.getElementById('tableWrap').innerHTML = '<div class="loading"><div class="loading-spin"></div>Loading claims…</div>';
+    try {
+      const res  = await fetch(API + '/claims');
+      const data = await res.json();
+      allClaims  = data.claims || [];
+      updateStats(allClaims);
+      renderTable(allClaims);
+    } catch {
+      document.getElementById('tableWrap').innerHTML =
+        '<div class="loading" style="color:var(--rd)">❌ Cannot connect to server.<br>Run: <code>node server.js</code> in backend folder.</div>';
+    }
+  }
+
+  function updateStats(c) {
+    document.getElementById('st-total').textContent    = c.length;
+    document.getElementById('st-pending').textContent  = c.filter(x => ['Pending','Under Review'].includes(x.status)).length;
+    document.getElementById('st-approved').textContent = c.filter(x => x.status === 'Approved').length;
+    document.getElementById('st-rejected').textContent = c.filter(x => x.status === 'Rejected').length;
+  }
+
+  function renderTable(claims) {
+    const f   = document.getElementById('filterStatus').value;
+    const fil = f ? claims.filter(c => c.status === f) : claims;
+    if (!fil.length) {
+      document.getElementById('tableWrap').innerHTML = '<div class="loading" style="color:var(--mt)">📭 No claims found.</div>';
+      return;
+    }
+    const bc = s => ({ Pending:'bp','Under Review':'br',Approved:'ba',Rejected:'bx' })[s] || 'bp';
+    const lc = l => ({ Critical:'bct',High:'bhi',Medium:'bme',Low:'blo' })[l] || 'blo';
+    const pc = p => p >= 70 ? 'high' : p >= 40 ? 'medium' : 'low';
+    document.getElementById('tableWrap').innerHTML = `
+      <table>
+        <thead><tr>
+          <th>Claim ID</th><th>Farmer</th><th>Crop · District</th>
+          <th>Damage</th><th>Priority</th><th>Status</th><th>Date</th>
+        </tr></thead>
+        <tbody>${fil.map(c => `
+          <tr onclick="openClaim('${c._id || c.claimId}')">
+            <td><code style="font-size:.76rem">${c.claimId}</code></td>
+            <td><strong>${c.farmerName}</strong><br><span style="font-size:.76rem;color:var(--mt)">${c.phone}</span></td>
+            <td>${c.cropType}<br><span style="font-size:.76rem;color:var(--mt)">${c.district} · ${c.landArea}ac</span></td>
+            <td>
+              <span class="badge ${lc(c.damageLevel)}">${c.damageLevel || '—'}</span>
+              ${c.severityScore ? `<br><span style="font-size:.78rem;font-weight:700">${c.severityScore}%</span>` : ''}
+            </td>
+            <td>
+              <div class="pbar">
+                <div class="ptrack"><div class="pfill ${pc(c.finalPriority)}" style="width:${c.finalPriority||0}%"></div></div>
+                <span class="pval">${c.finalPriority || '—'}</span>
+              </div>
+            </td>
+            <td><span class="badge ${bc(c.status)}">${c.status}</span></td>
+            <td style="font-size:.78rem;color:var(--mt)">${new Date(c.createdAt).toLocaleDateString('en-IN')}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  async function openClaim(id) {
+    try {
+      const res  = await fetch(`${API}/claims/${id}`);
+      const data = await res.json();
+      if (!data.success) return alert('Claim not found');
+      const c = data.claim;
+      currentClaimId = c._id || c.claimId;
+
+      document.getElementById('m-claimId').textContent  = c.claimId;
+      document.getElementById('m-farmer').textContent   = c.farmerName;
+      document.getElementById('m-phone').textContent    = c.phone;
+      document.getElementById('m-crop').textContent     = c.cropType;
+      document.getElementById('m-district').textContent = c.district;
+      document.getElementById('m-area').textContent     = c.landArea + ' acres';
+      document.getElementById('m-date').textContent     = new Date(c.createdAt).toLocaleString('en-IN');
+      document.getElementById('m-desc').textContent     = c.description || 'No description provided.';
+      document.getElementById('m-score').textContent    = (c.severityScore || 0) + '%';
+      document.getElementById('m-level').textContent    = c.damageLevel || 'Pending';
+      document.getElementById('m-explanation').textContent = c.llmExplanation || 'AI assessment in progress…';
+      document.getElementById('m-reasoning').textContent   = c.llmReasoning || 'Pending…';
+      document.getElementById('m-priority').textContent    = c.finalPriority || '—';
+
+      const lc   = { Critical:'bct',High:'bhi',Medium:'bme',Low:'blo' };
+      const badge = document.getElementById('m-level-badge');
+      badge.className   = 'badge ' + (lc[c.damageLevel] || 'blo');
+      badge.textContent = c.damageLevel || '—';
+      setTimeout(() => { document.getElementById('m-score-bar').style.width = (c.severityScore || 0) + '%'; }, 80);
+
+      document.getElementById('m-image').innerHTML = c.imageUrl
+        ? `<img src="http://localhost:5000${c.imageUrl}" class="crop-img" alt="Crop damage"
+             onerror="this.parentElement.innerHTML='<div class=no-img>📷 Image not available</div>'">`
+        : '<div class="no-img">📷 No image uploaded</div>';
+
+      document.getElementById('actionBtns').innerHTML = ['Approved','Rejected'].includes(c.status)
+        ? `<div style="grid-column:1/-1;text-align:center;padding:13px;background:#f8fafc;border-radius:8px;color:var(--mt);font-weight:600">
+             ✅ Claim has been <strong>${c.status}</strong>. No further action needed.</div>`
+        : `<button class="btn-approve" onclick="updateStatus('Approved')">✅ Approve Claim</button>
+           <button class="btn-reject"  onclick="updateStatus('Rejected')">❌ Reject Claim</button>`;
+
+      document.getElementById('claimModal').classList.add('open');
+    } catch { alert('Error loading claim details. Is the server running?'); }
+  }
+
+  async function updateStatus(status) {
+    if (!currentClaimId) return;
+    if (!confirm(`${status} this claim?\n\nAn SMS notification will be sent to the farmer.`)) return;
+    try {
+      const res  = await fetch(`${API}/claims/${currentClaimId}/status`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      const data = await res.json();
+      if (data.success) { closeModal(); loadClaims(); alert(`✅ Claim ${status}! SMS sent to farmer.`); }
+      else alert('Error: ' + data.error);
+    } catch { alert('Server error. Ensure backend is running.'); }
+  }
+
+  function closeModal() {
+    document.getElementById('claimModal').classList.remove('open');
+    currentClaimId = null;
+  }
+
+  function renderAnalytics() {
+    if (!allClaims.length) return;
+    const byCrop = {}, byDist = {};
+    allClaims.forEach(c => {
+      byCrop[c.cropType] = (byCrop[c.cropType] || 0) + 1;
+      byDist[c.district] = (byDist[c.district] || 0) + 1;
+    });
+    const bar = (label, n, total, color) => `
+      <div style="margin-bottom:9px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+          <span style="font-size:.85rem;font-weight:600">${label}</span>
+          <span style="font-size:.8rem;color:var(--mt)">${n} claims</span>
+        </div>
+        <div style="height:7px;background:#e2e8f0;border-radius:3px;overflow:hidden">
+          <div style="height:100%;background:${color};border-radius:3px;width:${(n/total*100).toFixed(1)}%"></div>
+        </div>
+      </div>`;
+    const ce = Object.entries(byCrop).sort((a,b)=>b[1]-a[1]);
+    const de = Object.entries(byDist).sort((a,b)=>b[1]-a[1]);
+    const avgSev = allClaims.filter(c=>c.severityScore).length
+      ? (allClaims.reduce((s,c)=>s+(c.severityScore||0),0)/allClaims.filter(c=>c.severityScore).length).toFixed(1)+'%' : 'N/A';
+    const avgPri = allClaims.filter(c=>c.finalPriority).length
+      ? (allClaims.reduce((s,c)=>s+(c.finalPriority||0),0)/allClaims.filter(c=>c.finalPriority).length).toFixed(1) : 'N/A';
+    document.getElementById('analyticsContent').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px">
+        <div><h3 style="font-size:.92rem;margin-bottom:13px">By Crop Type</h3>${ce.map(([k,v])=>bar(k,v,allClaims.length,'#2d6a4f')).join('')}</div>
+        <div><h3 style="font-size:.92rem;margin-bottom:13px">By District</h3>${de.map(([k,v])=>bar(k,v,allClaims.length,'#1a3c5e')).join('')}</div>
+      </div>
+      <div style="margin-top:18px;padding:13px;background:#f8fafc;border-radius:9px;font-size:.85rem">
+        <strong>Avg Severity:</strong> ${avgSev} &nbsp;|&nbsp; <strong>Avg Priority:</strong> ${avgPri}
+      </div>`;
+  }
+
+  document.getElementById('claimModal').addEventListener('click', e => {
+    if (e.target === document.getElementById('claimModal')) closeModal();
+  });
+</script>
+</body>
+</html>
