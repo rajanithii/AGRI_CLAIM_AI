@@ -10,8 +10,52 @@
       --amber: #f4a261; --red: #e63946;
       --bg: #f0faf3; --card: #ffffff; --text: #1b2d1f; --muted: #6b8f71;
       --shadow: 0 4px 20px rgba(45,106,79,.12);
+      --shadow-strong: 0 16px 40px rgba(45,106,79,.16);
+      --surface: #edf6f2;
+      --surface-strong: #d8f3dc;
+      --border: rgba(82,183,136,.18);
+    }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background .4s ease, color .4s ease;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    .card { background: var(--card); border-radius: 16px; padding: 24px; box-shadow: var(--shadow); margin-bottom: 16px; transition: transform .25s ease, box-shadow .25s ease, background .4s ease; }
+    .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-strong); }
+    nav { transition: background .4s ease, box-shadow .4s ease; }
+    .np { transition: background .25s ease, color .25s ease, transform .2s ease; }
+    .np:hover { transform: translateY(-1px); }
+    .page { transition: opacity .3s ease, transform .3s ease; }
+    .page.active { animation: fadeIn .35s ease forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .copy-btn { border: none; background: var(--green); color: #fff; padding: 7px 12px; border-radius: 999px; font-size: .78rem; cursor: pointer; transition: transform .2s ease, background .2s ease; }
+    .copy-btn:hover { transform: translateY(-1px); background: #1f4f37; }
+    body.dark { --bg: #071019; --card: #0f172a; --text: #f8fafc; --muted: #94a3b8; --shadow: 0 12px 32px rgba(0,0,0,.4); --shadow-strong: 0 20px 48px rgba(0,0,0,.45); --surface: #111827; --surface-strong: #1e293b; --border: rgba(148,163,184,.18); }
+    body.dark .nav { background: #020617; }
+    body.dark .hero { background: linear-gradient(135deg, #16324f, #0f172a); }
+    body.dark .card { box-shadow: var(--shadow); }
+    body.dark input, body.dark select, body.dark textarea { background: #0f172a; color: #f8fafc; border-color: rgba(148,163,184,.18); }
+    body.dark .upload-zone { background: #0f172a; border-color: rgba(148,163,184,.35); }
+    body.dark .track-row button, body.dark .copy-btn, body.dark .btn { background: #256c3d; }
+    body.dark .btn:hover { background: #184c2b; }
+
+    .progress-shell { height: 10px; border-radius: 999px; background: rgba(45,106,79,.12); overflow: hidden; margin-top: 18px; display: none; }
+    .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg,#2d6a4f,#52b788); transition: width .25s ease; }
+    .progress-label { font-size: .78rem; color: var(--muted); margin-top: 8px; display: none; }
+    .summary-overlay { position: fixed; inset: 0; display: none; background: rgba(0,0,0,.45); align-items: center; justify-content: center; padding: 18px; z-index: 1000; }
+    .summary-overlay.open { display: flex; }
+    .summary-card { background: var(--card); border-radius: 22px; max-width: 520px; width: 100%; padding: 26px; box-shadow: var(--shadow-strong); }
+    .summary-card h2 { margin: 0 0 8px; }
+    .summary-row { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .summary-key { color: var(--muted); font-size: .82rem; }
+    .summary-value { font-weight: 700; }
+    .summary-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .btn-secondary { padding: 11px 16px; border-radius: 12px; border: 1px solid rgba(45,106,79,.2); background: transparent; color: var(--text); cursor: pointer; transition: background .2s ease, transform .2s ease; }
+    .btn-secondary:hover { background: rgba(45,106,79,.08); transform: translateY(-1px); }
+    .summary-close { border: none; background: transparent; color: var(--muted); font-size: 1.2rem; cursor: pointer; }
     body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
     /* NAV */
@@ -113,10 +157,11 @@
 
 <nav>
   <div class="nav-logo">🌾 AgriClaim AI</div>
-  <div style="display:flex;gap:5px">
+  <div style="display:flex;gap:5px;align-items:center">
     <button class="np active" onclick="showPage('login')">Login</button>
     <button class="np" onclick="showPage('submit')">Submit</button>
     <button class="np" onclick="showPage('status')">Track</button>
+    <button class="np" id="themeToggle" onclick="toggleTheme()">🌙 Dark Mode</button>
   </div>
 </nav>
 
@@ -169,10 +214,10 @@
         <label>District *</label>
         <select id="district">
           <option value="">Select district</option>
-          <option>Nashik</option><option>Pune</option><option>Nagpur</option><option>Aurangabad</option>
-          <option>Solapur</option><option>Kolhapur</option><option>Amravati</option><option>Jalgaon</option>
-          <option>Latur</option><option>Osmanabad</option><option>Nanded</option><option>Wardha</option>
-          <option>Ahmednagar</option><option>Sangli</option><option>Satara</option>
+          <option>Chennai</option><option>Coimbatore</option><option>Madurai</option><option>Tiruchirappalli</option>
+          <option>Salem</option><option>Vellore</option><option>Thanjavur</option><option>Tirunelveli</option>
+          <option>Erode</option><option>Dindigul</option><option>Kanyakumari</option><option>Namakkal</option>
+          <option>Thoothukudi</option><option>Pudukkottai</option><option>Tiruppur</option>
         </select>
       </div>
       <div class="fg"><label>Land Area (Acres) *</label><input type="number" id="landArea" placeholder="e.g. 3.5" min="0.1" step="0.1"/></div>
@@ -203,7 +248,7 @@
     <div id="statusResult" style="display:none">
       <div class="card">
         <div class="card-title">📄 Claim Status</div>
-        <div class="srow"><span class="slabel">Claim ID</span><span class="svalue" id="s-claimId">—</span></div>
+        <div class="srow"><span class="slabel">Claim ID</span><span style="display:flex;align-items:center;gap:10px"><span class="svalue" id="s-claimId">—</span><button class="copy-btn" onclick="copyClaimId()">Copy</button></span></div>
         <div class="srow"><span class="slabel">Farmer</span><span class="svalue" id="s-farmer">—</span></div>
         <div class="srow"><span class="slabel">Crop · District · Area</span><span class="svalue" id="s-crop">—</span></div>
         <div class="srow"><span class="slabel">Status</span><span id="s-status">—</span></div>
@@ -231,6 +276,27 @@
 
 </main>
 <div id="toast" class="toast"></div>
+<div class="summary-overlay" id="submitSummary">
+  <div class="summary-card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;">
+      <div>
+        <h2>Claim Submitted</h2>
+        <p style="margin:0;color:var(--muted);font-size:.92rem;line-height:1.4;">Your claim has been received and is now queued for AI review. You can copy the claim ID or go straight to tracking.</p>
+      </div>
+      <button class="summary-close" onclick="closeSummary()">✕</button>
+    </div>
+    <div class="summary-row"><span class="summary-key">Claim ID</span><span class="summary-value" id="sum-claimId">—</span></div>
+    <div class="summary-row"><span class="summary-key">Crop Type</span><span class="summary-value" id="sum-crop">—</span></div>
+    <div class="summary-row"><span class="summary-key">District</span><span class="summary-value" id="sum-district">—</span></div>
+    <div class="summary-row"><span class="summary-key">Land Area</span><span class="summary-value" id="sum-area">—</span></div>
+    <div class="summary-row"><span class="summary-key">Status</span><span class="summary-value" id="sum-status">Pending</span></div>
+    <div class="summary-actions">
+      <button class="btn" onclick="copyClaimId()">Copy Claim ID</button>
+      <button class="btn-secondary" onclick="showPage('status'); closeSummary();">Go to Status</button>
+      <button class="btn-secondary" onclick="closeSummary()">Close</button>
+    </div>
+  </div>
+</div>
 
 <script>
    // ✅ CORRECT BASE API
@@ -239,6 +305,31 @@
   function showPage(name) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-' + name).classList.add('active');
+    document.querySelectorAll('.np').forEach(btn => btn.classList.toggle('active', btn.textContent.toLowerCase() === name));
+  }
+
+  function toggleTheme() {
+    const mode = document.body.classList.contains('dark') ? 'light' : 'dark';
+    setTheme(mode);
+  }
+
+  function setTheme(mode) {
+    document.body.classList.toggle('dark', mode === 'dark');
+    const themeBtn = document.getElementById('themeToggle');
+    if (themeBtn) themeBtn.textContent = mode === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    localStorage.setItem('agriTheme', mode);
+  }
+
+  function initTheme() {
+    const stored = localStorage.getItem('agriTheme');
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setTheme(stored || (prefersDark ? 'dark' : 'light'));
+  }
+
+  function copyClaimId() {
+    const id = document.getElementById('s-claimId')?.textContent.trim();
+    if (!id || id === '—') return showToast('No Claim ID yet');
+    navigator.clipboard.writeText(id).then(() => showToast('Claim ID copied')).catch(() => showToast('Copy failed'));
   }
 
   function toast(msg) {
@@ -253,6 +344,9 @@
     clearTimeout(window.toastTimeout);
     window.toastTimeout = setTimeout(() => toastEl.classList.remove('show'), duration);
   }
+
+  let submitProgressInterval = null;
+  let progressValue = 0;
 
   function previewImage(event) {
     const file = event.target.files?.[0];
@@ -273,6 +367,59 @@
     }
     if (icon) icon.style.display = 'none';
     if (text) text.textContent = file.name;
+  }
+
+  function setSubmitProgress(value, label) {
+    const shell = document.getElementById('submitProgress');
+    const fill = document.getElementById('progressFill');
+    const labelEl = document.getElementById('progressLabel');
+    if (!shell || !fill || !labelEl) return;
+    shell.style.display = 'block';
+    labelEl.style.display = 'block';
+    fill.style.width = `${Math.min(Math.max(value, 0), 100)}%`;
+    if (label) labelEl.textContent = label;
+  }
+
+  function startSubmitProgress() {
+    progressValue = 10;
+    setSubmitProgress(progressValue, 'Submitting claim...');
+    if (submitProgressInterval) clearInterval(submitProgressInterval);
+    submitProgressInterval = setInterval(() => {
+      progressValue = Math.min(90, progressValue + Math.floor(Math.random() * 8) + 3);
+      setSubmitProgress(progressValue);
+      if (progressValue >= 90) {
+        clearInterval(submitProgressInterval);
+      }
+    }, 400);
+  }
+
+  function finishSubmitProgress() {
+    if (submitProgressInterval) clearInterval(submitProgressInterval);
+    setSubmitProgress(100, 'Upload complete. Finalizing...');
+    setTimeout(() => {
+      const shell = document.getElementById('submitProgress');
+      const labelEl = document.getElementById('progressLabel');
+      if (shell) shell.style.display = 'none';
+      if (labelEl) labelEl.style.display = 'none';
+      const fill = document.getElementById('progressFill');
+      if (fill) fill.style.width = '0%';
+    }, 500);
+  }
+
+  function showSummary(claim) {
+    const overlay = document.getElementById('submitSummary');
+    if (!overlay) return;
+    document.getElementById('sum-claimId').textContent = claim.claimId || '—';
+    document.getElementById('sum-crop').textContent = claim.cropType || '—';
+    document.getElementById('sum-district').textContent = claim.district || '—';
+    document.getElementById('sum-area').textContent = claim.landArea != null ? `${claim.landArea} acres` : '—';
+    document.getElementById('sum-status').textContent = claim.status || 'Pending';
+    overlay.classList.add('open');
+  }
+
+  function closeSummary() {
+    const overlay = document.getElementById('submitSummary');
+    if (overlay) overlay.classList.remove('open');
   }
 
   function formatDate(date) {
@@ -335,6 +482,7 @@
     }
 
     try {
+      startSubmitProgress();
       const res = await fetch(`${API}/claims`, {
         method: 'POST',
         body: fd
@@ -342,6 +490,7 @@
 
       const data = await res.json();
       console.log(data);
+      finishSubmitProgress();
 
       if (data.success) {
         showToast("✅ Claim submitted: " + data.claim.claimId);
@@ -362,6 +511,7 @@
           createdAt: new Date().toISOString(),
         };
         renderClaimStatus(previewClaim);
+        showSummary(previewClaim);
       } else {
         showToast("❌ " + (data.error || 'Submission failed'));
       }
@@ -398,6 +548,8 @@
       showToast("❌ Cannot connect to server");
     }
   }
+
+  initTheme();
 </script>
 </body>
 </html>
