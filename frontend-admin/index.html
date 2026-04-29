@@ -254,65 +254,125 @@
 </div>
 
 <script>
-   // ✅ FIXED BASE URL
-  const API = 'https://agri-claim-ai-3.onrender.com/api';
+   const API = 'https://agri-claim-ai-3.onrender.com/api';
 
-  let allClaims = [], currentClaimId = null;
+function get(id) {
+  return document.getElementById(id);
+}
 
-  function adminLogin() {
-    if (
-      document.getElementById('adminUser').value === 'admin' &&
-      document.getElementById('adminPass').value === 'admin123'
-    ) {
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('dashboardScreen').style.display = 'block';
-      loadClaims();
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const el = get('page-' + name);
+  if (el) el.classList.add('active');
+}
+
+function toast(msg) {
+  alert(msg);
+}
+
+function doLogin() {
+  const phoneEl = get('lPhone');
+  const nameEl  = get('lName');
+
+  if (!phoneEl || !nameEl) return alert("❌ Missing input fields");
+
+  const phone = phoneEl.value.trim();
+  const name  = nameEl.value.trim();
+
+  if (!phone || phone.length < 10) return toast('Enter valid number');
+  if (!name) return toast('Enter name');
+
+  const farmerName  = get('farmerName');
+  const farmerPhone = get('farmerPhone');
+
+  if (farmerName)  farmerName.value = name;
+  if (farmerPhone) farmerPhone.value = phone;
+
+  showPage('submit');
+}
+
+async function submitClaim() {
+  const fd = new FormData();
+
+  const farmerName = get('farmerName')?.value;
+  const phone      = get('farmerPhone')?.value;
+  const cropType   = get('cropType')?.value;
+  const district   = get('district')?.value;
+  const landArea   = get('landArea')?.value;
+  const desc       = get('description')?.value;
+
+  if (!farmerName || !phone || !cropType || !district || !landArea) {
+    return alert("⚠️ Fill all required fields");
+  }
+
+  fd.append('farmerName', farmerName);
+  fd.append('phone', phone);
+  fd.append('cropType', cropType);
+  fd.append('district', district);
+  fd.append('landArea', landArea);
+  fd.append('description', desc || '');
+
+  const file = get('imageFile')?.files?.[0];
+  if (file) fd.append('image', file);
+
+  try {
+    const res = await fetch('${API}/claims', {
+      method: 'POST',
+      body: fd
+    });
+
+    console.log("STATUS:", res.status);
+
+    const text = await res.text();
+    console.log("RAW:", text);
+
+    const data = JSON.parse(text);
+
+    if (data.success) {
+      alert("✅ Claim submitted: " + data.claim.claimId);
+      const input = get('claimIdInput');
+      if (input) input.value = data.claim.claimId;
+      showPage('status');
     } else {
-      alert('Invalid credentials. Use admin / admin123');
+      alert("❌ " + data.error);
     }
+
+  } catch (err) {
+    console.error(err);
+    alert("❌ Cannot reach server");
   }
+}
 
-  function adminLogout() {
-    document.getElementById('loginScreen').style.display = 'flex';
-    document.getElementById('dashboardScreen').style.display = 'none';
+async function trackClaim() {
+  const input = get('claimIdInput');
+  if (!input) return alert("❌ Input missing");
+
+  const id = input.value.trim();
+  if (!id) return alert("Enter Claim ID");
+
+  try {
+    const res = await fetch(`${API}/claims/${id}`);
+
+    const text = await res.text();
+    console.log("RAW:", text);
+
+    const data = JSON.parse(text);
+
+    if (!data.success) return alert("Claim not found");
+
+    const c = data.claim;
+
+    const box = get('statusResult');
+    if (box) box.style.display = 'block';
+
+    if (get('s-claimId')) get('s-claimId').textContent = c.claimId;
+    if (get('s-farmer'))  get('s-farmer').textContent = c.farmerName;
+
+  } catch (err) {
+    console.error(err);
+    alert("❌ Cannot connect to server");
   }
-
-  async function loadClaims() {
-    document.getElementById('tableWrap').innerHTML =
-      '<div class="loading">Loading...</div>';
-
-    try {
-      // ✅ CORRECT ENDPOINT
-      const res = await fetch(API + '/claims');
-      const data = await res.json();
-
-      console.log("API RESPONSE:", data); // 🔥 debug
-
-      allClaims = data.claims || [];
-      updateStats(allClaims);
-      renderTable(allClaims);
-
-    } catch (err) {
-      console.error("ERROR:", err); // 🔥 shows real error
-      document.getElementById('tableWrap').innerHTML =
-        '<div style="color:red">❌ Cannot connect to server</div>';
-    }
-  }
-
-  async function openClaim(id) {
-    try {
-      // ✅ CORRECT ENDPOINT
-      const res = await fetch(`${API}/claims/${id}`);
-      const data = await res.json();
-
-      if (!data.success) return alert('Claim not found');
-
-      console.log("CLAIM:", data);
-
-    } catch (err) {
-      console.error("ERROR:", err);
-    }
-  }
+}
 </script>
 </body>
 </html>
