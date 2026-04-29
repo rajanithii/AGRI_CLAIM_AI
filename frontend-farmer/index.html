@@ -233,187 +233,88 @@
 <div id="toast" class="toast"></div>
 
 <script>
+   // ✅ CORRECT BASE API
   const API = 'https://agri-claim-ai-3.onrender.com/api';
-  const STATUS_BADGES = {
-    Pending: 'badge badge-pending',
-    'Under Review': 'badge badge-review',
-    Approved: 'badge badge-approved',
-    Rejected: 'badge badge-rejected',
-  };
 
   function showPage(name) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-' + name).classList.add('active');
-    document.querySelectorAll('.np').forEach((b, i) =>
-      b.classList.toggle('active', ['login', 'submit', 'status'][i] === name)
-    );
   }
 
-  function toast(msg, ms = 3500) {
-    const el = document.getElementById('toast');
-    el.textContent = msg;
-    el.classList.add('show');
-    setTimeout(() => el.classList.remove('show'), ms);
-  }
-
-  function previewImage(event) {
-    const file = event.target.files[0];
-    const preview = document.getElementById('imgPreview');
-    const uploadText = document.getElementById('uploadText');
-
-    if (!file) {
-      preview.style.display = 'none';
-      preview.src = '';
-      uploadText.innerHTML = '<strong>Tap to upload photo</strong>';
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      preview.src = reader.result;
-      preview.style.display = 'block';
-      uploadText.innerHTML = `<strong>${file.name}</strong><br>${(file.size / 1024 / 1024).toFixed(2)} MB`;
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function normalizePhone(phone) {
-    return phone.replace(/\D/g, '');
+  function toast(msg) {
+    alert(msg);
   }
 
   function doLogin() {
-    const rawPhone = document.getElementById('lPhone').value;
-    const phone = normalizePhone(rawPhone);
-    const name = document.getElementById('lName').value.trim();
+    const phone = document.getElementById('lPhone').value.trim();
+    const name  = document.getElementById('lName').value.trim();
 
-    if (!phone || phone.length !== 10) return toast('⚠️ Enter a valid 10-digit number');
-    if (!name) return toast('⚠️ Enter your name');
+    if (!phone || phone.length < 10) return toast('Enter valid number');
+    if (!name) return toast('Enter name');
 
-    document.getElementById('lPhone').value = phone;
-    document.getElementById('farmerName').value = name;
+    document.getElementById('farmerName').value  = name;
     document.getElementById('farmerPhone').value = phone;
 
-    toast(`✅ Welcome, ${name}!`);
-    setTimeout(() => showPage('submit'), 700);
-  }
-
-  function validateClaimForm() {
-    const farmerName = document.getElementById('farmerName').value.trim();
-    const phone = normalizePhone(document.getElementById('farmerPhone').value);
-    const cropType = document.getElementById('cropType').value;
-    const district = document.getElementById('district').value;
-    const landArea = document.getElementById('landArea').value;
-
-    if (!farmerName) return 'Farmer name is required';
-    if (!phone || phone.length !== 10) return 'Valid mobile number is required';
-    if (!cropType) return 'Select crop type';
-    if (!district) return 'Select district';
-    if (!landArea || Number(landArea) <= 0) return 'Enter a valid land area';
-    return '';
+    showPage('submit');
   }
 
   async function submitClaim() {
-    const btn = document.getElementById('submitBtn');
-    const validationError = validateClaimForm();
-    if (validationError) return toast(`⚠️ ${validationError}`);
-
     const fd = new FormData();
-    fd.append('farmerName', document.getElementById('farmerName').value.trim());
-    fd.append('phone', normalizePhone(document.getElementById('farmerPhone').value));
+
+    fd.append('farmerName', document.getElementById('farmerName').value);
+    fd.append('phone', document.getElementById('farmerPhone').value);
     fd.append('cropType', document.getElementById('cropType').value);
     fd.append('district', document.getElementById('district').value);
     fd.append('landArea', document.getElementById('landArea').value);
-    fd.append('description', document.getElementById('description').value.trim());
+    fd.append('description', document.getElementById('description').value);
 
-    const imageFile = document.getElementById('imageFile').files[0];
-    if (imageFile) fd.append('image', imageFile);
-
-    btn.disabled = true;
-    btn.innerHTML = 'Submitting...';
+    const file = document.getElementById('imageFile').files[0];
+    if (file) fd.append('image', file);
 
     try {
       const res = await fetch(`${API}/claims`, {
         method: 'POST',
-        body: fd,
+        body: fd
       });
 
       const data = await res.json();
-      console.log('SUBMIT RESPONSE:', data);
+      console.log(data);
 
       if (data.success) {
-        toast('✅ Claim submitted!');
-        document.getElementById('claimIdInput').value = data.claim.claimId || '';
+        alert("✅ Claim submitted: " + data.claim.claimId);
+        document.getElementById('claimIdInput').value = data.claim.claimId;
         showPage('status');
       } else {
-        toast('❌ ' + (data.error || 'Failed to submit claim'));
+        alert("❌ " + data.error);
       }
+
     } catch (err) {
-      console.error('ERROR:', err);
-      toast('❌ Cannot reach server');
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = '🚀 Submit Claim';
+      console.error(err);
+      alert("❌ Cannot reach server");
     }
-  }
-
-  function getStatusBadge(status) {
-    const cssClass = STATUS_BADGES[status] || STATUS_BADGES.Pending;
-    return `<span class="${cssClass}">${status || 'Pending'}</span>`;
-  }
-
-  function getDamageLevelClass(level) {
-    switch ((level || '').toLowerCase()) {
-      case 'low': return 'low';
-      case 'medium': return 'medium';
-      case 'high': return 'high';
-      case 'critical': return 'critical';
-      default: return 'low';
-    }
-  }
-
-  function formatClaimDate(value) {
-    if (!value) return '—';
-    const date = new Date(value);
-    return isNaN(date.getTime()) ? '—' : date.toLocaleDateString();
   }
 
   async function trackClaim() {
     const id = document.getElementById('claimIdInput').value.trim();
-    if (!id) return toast('⚠️ Enter claim ID');
+    if (!id) return alert("Enter Claim ID");
 
     try {
-      const res = await fetch(API + '/claims/' + encodeURIComponent(id));
+      const res = await fetch(`${API}/claims/${id}`);
       const data = await res.json();
-      console.log('TRACK RESPONSE:', data);
 
-      if (!res.ok || !data.success) {
-        return toast('❌ ' + (data.error || 'Claim not found'));
-      }
+      console.log(data);
+
+      if (!data.success) return alert("Claim not found");
 
       const c = data.claim;
-      document.getElementById('statusResult').style.display = 'block';
-      document.getElementById('s-claimId').textContent = c.claimId || '—';
-      document.getElementById('s-farmer').textContent = c.farmerName || '—';
-      document.getElementById('s-crop').textContent = `${c.cropType || '—'} · ${c.district || '—'} · ${c.landArea || '—'} acres`;
-      document.getElementById('s-status').innerHTML = getStatusBadge(c.status);
-      document.getElementById('s-date').textContent = formatClaimDate(c.createdAt || c.updatedAt);
 
-      const aiCard = document.getElementById('aiResultCard');
-      if (c.aiProcessed && Number(c.severityScore) > 0) {
-        const score = Math.min(Math.max(Number(c.severityScore), 0), 100);
-        document.getElementById('s-score').textContent = `${score}%`;
-        const meter = document.getElementById('s-meter');
-        meter.style.width = `${score}%`;
-        meter.className = 'meter-fill ' + getDamageLevelClass(c.damageLevel);
-        document.getElementById('s-level').textContent = c.damageLevel || 'Medium';
-        document.getElementById('s-explanation').textContent = c.llmExplanation || c.llmReasoning || 'AI assessment is pending.';
-        aiCard.style.display = 'block';
-      } else {
-        aiCard.style.display = 'none';
-      }
+      document.getElementById('statusResult').style.display = 'block';
+      document.getElementById('s-claimId').textContent = c.claimId;
+      document.getElementById('s-farmer').textContent = c.farmerName;
+
     } catch (err) {
-      console.error('ERROR:', err);
-      toast('❌ Cannot connect to server');
+      console.error(err);
+      alert("❌ Cannot connect to server");
     }
   }
 </script>
