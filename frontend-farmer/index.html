@@ -242,7 +242,64 @@
   }
 
   function toast(msg) {
-    alert(msg);
+    showToast(msg);
+  }
+
+  function showToast(message, duration = 3000) {
+    const toastEl = document.getElementById('toast');
+    if (!toastEl) return alert(message);
+    toastEl.textContent = message;
+    toastEl.classList.add('show');
+    clearTimeout(window.toastTimeout);
+    window.toastTimeout = setTimeout(() => toastEl.classList.remove('show'), duration);
+  }
+
+  function previewImage(event) {
+    const file = event.target.files?.[0];
+    const preview = document.getElementById('imgPreview');
+    const icon = document.getElementById('uploadIcon');
+    const text = document.getElementById('uploadText');
+
+    if (!file) {
+      if (preview) preview.style.display = 'none';
+      if (icon) icon.style.display = 'block';
+      if (text) text.textContent = 'Tap to upload photo';
+      return;
+    }
+
+    if (preview) {
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = 'block';
+    }
+    if (icon) icon.style.display = 'none';
+    if (text) text.textContent = file.name;
+  }
+
+  function formatDate(date) {
+    if (!date) return '—';
+    const d = new Date(date);
+    if (isNaN(d)) return '—';
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function renderClaimStatus(c) {
+    document.getElementById('statusResult').style.display = 'block';
+    document.getElementById('s-claimId').textContent = c.claimId || '—';
+    document.getElementById('s-farmer').textContent = c.farmerName || '—';
+    document.getElementById('s-crop').textContent = `${c.cropType || '—'} · ${c.district || '—'} · ${c.landArea != null ? c.landArea + ' acres' : '—'}`;
+    document.getElementById('s-status').textContent = c.status || 'Pending';
+    document.getElementById('s-date').textContent = formatDate(c.createdAt || c.updatedAt);
+
+    const aiCard = document.getElementById('aiResultCard');
+    if (c.aiProcessed && c.severityScore != null) {
+      aiCard.style.display = 'block';
+      document.getElementById('s-score').textContent = c.severityScore;
+      document.getElementById('s-meter').style.width = `${Math.min(Math.max(c.severityScore, 0), 100)}%`;
+      document.getElementById('s-level').textContent = c.damageLevel || 'Low';
+      document.getElementById('s-explanation').textContent = c.llmExplanation || 'AI explanation will appear here when ready.';
+    } else {
+      aiCard.style.display = 'none';
+    }
   }
 
   function doLogin() {
@@ -271,6 +328,12 @@
     const file = document.getElementById('imageFile').files[0];
     if (file) fd.append('image', file);
 
+    const submitBtn = document.getElementById('submitBtn');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = '⏳ Submitting...';
+    }
+
     try {
       const res = await fetch(`${API}/claims`, {
         method: 'POST',
@@ -281,40 +344,58 @@
       console.log(data);
 
       if (data.success) {
-        alert("✅ Claim submitted: " + data.claim.claimId);
+        showToast("✅ Claim submitted: " + data.claim.claimId);
         document.getElementById('claimIdInput').value = data.claim.claimId;
         showPage('status');
+        const previewClaim = {
+          ...data.claim,
+          cropType: document.getElementById('cropType').value,
+          district: document.getElementById('district').value,
+          landArea: document.getElementById('landArea').value,
+          description: document.getElementById('description').value,
+          aiProcessed: false,
+          severityScore: null,
+          damageLevel: 'Low',
+          llmExplanation: '',
+          llmReasoning: '',
+          finalPriority: 0,
+          createdAt: new Date().toISOString(),
+        };
+        renderClaimStatus(previewClaim);
       } else {
-        alert("❌ " + data.error);
+        showToast("❌ " + (data.error || 'Submission failed'));
       }
 
     } catch (err) {
       console.error(err);
-      alert("❌ Cannot reach server");
+      showToast("❌ Cannot reach server");
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '🚀 Submit Claim for AI Assessment';
+      }
     }
   }
 
   async function trackClaim() {
     const id = document.getElementById('claimIdInput').value.trim();
-    if (!id) return alert("Enter Claim ID");
+    if (!id) return showToast("Enter Claim ID");
 
     try {
       const res = await fetch(`${API}/claims/${id}`);
       const data = await res.json();
 
-      console.log(data);
+      if (!data.success) {
+        showToast(data.error || "Claim not found");
+        document.getElementById('statusResult').style.display = 'none';
+        return;
+      }
 
-      if (!data.success) return alert("Claim not found");
-
-      const c = data.claim;
-
-      document.getElementById('statusResult').style.display = 'block';
-      document.getElementById('s-claimId').textContent = c.claimId;
-      document.getElementById('s-farmer').textContent = c.farmerName;
+      renderClaimStatus(data.claim);
 
     } catch (err) {
       console.error(err);
-      alert("❌ Cannot connect to server");
+      showToast("❌ Cannot connect to server");
     }
   }
 </script>
