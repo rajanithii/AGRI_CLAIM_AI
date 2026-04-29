@@ -142,8 +142,8 @@
   <div class="sidebar">
     <div class="sb-logo">🌾 AgriClaim AI<span>Admin Portal</span></div>
     <nav class="sb-nav">
-      <div class="sb-item active" onclick="showAdminPage('claims')"><span class="ic">📋</span><span>All Claims</span></div>
-      <div class="sb-item" onclick="showAdminPage('analytics')"><span class="ic">📊</span><span>Analytics</span></div>
+      <div class="sb-item active" data-page="claims" onclick="showAdminPage('claims')"><span class="ic">📋</span><span>All Claims</span></div>
+      <div class="sb-item" data-page="analytics" onclick="showAdminPage('analytics')"><span class="ic">📊</span><span>Analytics</span></div>
       <div class="sb-item" onclick="adminLogout()"><span class="ic">🚪</span><span>Logout</span></div>
     </nav>
   </div>
@@ -168,8 +168,9 @@
         <div class="card">
           <div class="card-header">
             <h2>📋 Claims Queue (Sorted by Priority)</h2>
-            <div style="display:flex;gap:7px;align-items:center">
-              <select class="filter-sel" id="filterStatus" onchange="renderTable(allClaims)">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <input type="search" class="filter-sel" id="searchClaim" placeholder="Search claim, farmer, district" oninput="renderTable(adminClaims)" />
+              <select class="filter-sel" id="filterStatus" onchange="renderTable(adminClaims)">
                 <option value="">All Status</option>
                 <option>Pending</option><option>Under Review</option><option>Approved</option><option>Rejected</option>
               </select>
@@ -193,7 +194,7 @@
 </div>
 
 <!-- CLAIM DETAIL MODAL -->
-<div class="modal-overlay" id="claimModal">
+<div class="modal-overlay" id="claimModal" onclick="onModalOverlayClick(event)">
   <div class="modal">
     <div class="modal-header">
       <h2 id="m-claimId">Claim Details</h2>
@@ -266,8 +267,235 @@ function showPage(name) {
   if (el) el.classList.add('active');
 }
 
+function showAdminPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const el = get('ap-' + name);
+  if (el) el.classList.add('active');
+
+  document.querySelectorAll('.sb-item[data-page]').forEach(item => {
+    item.classList.toggle('active', item.dataset.page === name);
+  });
+}
+
 function toast(msg) {
   alert(msg);
+}
+
+let adminClaims = [];
+
+function adminLogin() {
+  const user = get('adminUser')?.value.trim();
+  const pass = get('adminPass')?.value.trim();
+
+  if (!user || !pass) return toast('Enter username and password');
+  if (user !== 'admin' || pass !== 'admin123') return toast('Invalid credentials');
+
+  const loginScreen = get('loginScreen');
+  const dashboardScreen = get('dashboardScreen');
+
+  if (loginScreen) loginScreen.style.display = 'none';
+  if (dashboardScreen) dashboardScreen.style.display = 'block';
+
+  loadClaims();
+}
+
+function adminLogout() {
+  const loginScreen = get('loginScreen');
+  const dashboardScreen = get('dashboardScreen');
+
+  if (dashboardScreen) dashboardScreen.style.display = 'none';
+  if (loginScreen) loginScreen.style.display = 'flex';
+}
+
+async function loadClaims() {
+  const wrap = get('tableWrap');
+  if (wrap) wrap.innerHTML = '<div class="loading"><div class="loading-spin"></div>Loading claims…</div>';
+
+  try {
+    const res = await fetch(`${API}/claims`);
+    const data = await res.json();
+
+    if (!data.success || !Array.isArray(data.claims)) {
+      if (wrap) wrap.innerHTML = '<div class="loading">No claims found.</div>';
+      return;
+    }
+
+    adminClaims = data.claims;
+    renderStats(adminClaims);
+    renderAnalytics(adminClaims);
+    renderTable(adminClaims);
+  } catch (err) {
+    console.error(err);
+    if (wrap) wrap.innerHTML = '<div class="loading">Unable to load claims.</div>';
+  }
+}
+
+function renderStats(claims) {
+  if (!claims) return;
+  const pending = claims.filter(c => c.status === 'Pending' || c.status === 'Under Review').length;
+  const approved = claims.filter(c => c.status === 'Approved').length;
+  const rejected = claims.filter(c => c.status === 'Rejected').length;
+
+  if (get('st-total')) get('st-total').textContent = claims.length;
+  if (get('st-pending')) get('st-pending').textContent = pending;
+  if (get('st-approved')) get('st-approved').textContent = approved;
+  if (get('st-rejected')) get('st-rejected').textContent = rejected;
+}
+
+function renderAnalytics(claims) {
+  if (!claims) return;
+  const total = claims.length;
+  const avgPriority = total ? (claims.reduce((sum, c) => sum + (c.finalPriority || 0), 0) / total).toFixed(1) : 0;
+  const districts = claims.reduce((acc, claim) => {
+    const key = claim.district || 'Unknown';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+  const tops = Object.entries(districts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([district, count]) => `<div style="margin-bottom:8px"><strong>${district}</strong> · ${count} claims</div>`)
+    .join('') || '<div style="color:var(--mt)">No claims yet.</div>';
+
+  const html = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div class="stat-card blue" style="padding:18px;">
+        <div class="stat-label">Average Priority</div>
+        <div class="stat-value">${avgPriority}</div>
+        <div class="stat-sub">Based on all submitted claims</div>
+      </div>
+      <div class="stat-card amber" style="padding:18px;">
+        <div class="stat-label">Top Districts</div>
+        <div class="stat-sub">${tops}</div>
+      </div>
+    </div>
+  `;
+  if (get('analyticsContent')) get('analyticsContent').innerHTML = html;
+}
+
+function renderTable(claims) {
+  const filter = get('filterStatus')?.value || '';
+  const search = get('searchClaim')?.value.trim().toLowerCase() || '';
+  const list = (claims || adminClaims).filter(c => {
+    const matchesStatus = !filter || c.status === filter;
+    const text = `${c.claimId || ''} ${c.farmerName || ''} ${c.cropType || ''} ${c.district || ''}`.toLowerCase();
+    const matchesSearch = !search || text.includes(search);
+    return matchesStatus && matchesSearch;
+  });
+  const wrap = get('tableWrap');
+
+  if (!wrap) return;
+  if (!list.length) {
+    wrap.innerHTML = '<div class="loading">No claims found.</div>';
+    return;
+  }
+
+  const rows = list.map(c => `
+    <div style="border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px;display:grid;gap:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+        <strong>${c.claimId || '—'}</strong>
+        <span class="badge ${c.status === 'Pending' ? 'bp' : c.status === 'Under Review' ? 'br' : c.status === 'Approved' ? 'blo' : c.status === 'Rejected' ? 'bx' : 'bct'}">${c.status || 'Unknown'}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.93rem;">
+        <div><strong>Farmer:</strong> ${c.farmerName || '—'}</div>
+        <div><strong>Crop:</strong> ${c.cropType || '—'}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-size:.85rem;color:var(--mt);">${c.district || '—'}</span>
+        <button class="login-btn" style="max-width:180px;" onclick="openClaimDetails('${c._id || c.claimId}')">View details</button>
+      </div>
+    </div>`).join('');
+
+  wrap.innerHTML = rows;
+}
+
+let selectedClaimId = null;
+
+function formatDate(date) {
+  if (!date) return '—';
+  const d = new Date(date);
+  if (isNaN(d)) return '—';
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function levelBadge(level) {
+  switch (level) {
+    case 'Critical': return { text: 'Critical', cls: 'bx' };
+    case 'High': return { text: 'High', cls: 'bhi' };
+    case 'Medium': return { text: 'Medium', cls: 'bme' };
+    default: return { text: 'Low', cls: 'blo' };
+  }
+}
+
+function openClaimDetails(id) {
+  const claim = adminClaims.find(c => c._id === id || c.claimId === id);
+  if (!claim) return toast('Claim not found');
+  selectedClaimId = id;
+
+  if (get('m-claimId')) get('m-claimId').textContent = claim.claimId || '—';
+  if (get('m-farmer')) get('m-farmer').textContent = claim.farmerName || '—';
+  if (get('m-phone')) get('m-phone').textContent = claim.phone || '—';
+  if (get('m-crop')) get('m-crop').textContent = claim.cropType || '—';
+  if (get('m-district')) get('m-district').textContent = claim.district || '—';
+  if (get('m-area')) get('m-area').textContent = claim.landArea != null ? `${claim.landArea} acres` : '—';
+  if (get('m-date')) get('m-date').textContent = formatDate(claim.createdAt || claim.updatedAt);
+  if (get('m-desc')) get('m-desc').textContent = claim.description || 'No description provided.';
+
+  const imgContainer = get('m-image');
+  if (imgContainer) {
+    if (claim.imageUrl) {
+      imgContainer.innerHTML = `<img class="crop-img" src="${claim.imageUrl}" alt="Claim image" onerror="this.style.display='none'" />`;
+    } else {
+      imgContainer.innerHTML = '<div class="no-img">No image uploaded for this claim.</div>';
+    }
+  }
+
+  const score = claim.severityScore != null ? claim.severityScore : 0;
+  const level = claim.damageLevel || 'Low';
+  const badge = levelBadge(level);
+
+  if (get('m-score')) get('m-score').textContent = score;
+  if (get('m-level')) get('m-level').textContent = level;
+  if (get('m-level-badge')) {
+    get('m-level-badge').textContent = badge.text;
+    get('m-level-badge').className = `badge ${badge.cls}`;
+  }
+  if (get('m-score-bar')) get('m-score-bar').style.width = `${Math.min(Math.max(score, 0), 100)}%`;
+  if (get('m-explanation')) get('m-explanation').textContent = claim.llmExplanation || 'AI assessment is pending. Please check back later.';
+  if (get('m-reasoning')) get('m-reasoning').textContent = claim.llmReasoning || 'AI analysis will be available once processing completes.';
+  if (get('m-priority')) get('m-priority').textContent = claim.finalPriority != null ? claim.finalPriority : 'N/A';
+
+  const modal = get('claimModal');
+  if (modal) modal.classList.add('open');
+}
+
+function onModalOverlayClick(event) {
+  if (event.target === event.currentTarget) closeModal();
+}
+
+function closeModal() {
+  const modal = get('claimModal');
+  if (modal) modal.classList.remove('open');
+  selectedClaimId = null;
+}
+
+async function updateStatus(status) {
+  if (!selectedClaimId) return toast('Open a claim first');
+  try {
+    const res = await fetch(`${API}/claims/${selectedClaimId}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    const data = await res.json();
+    if (!data.success) return toast(data.error || 'Failed to update status');
+    toast(`Claim updated to ${status}`);
+    closeModal();
+    loadClaims();
+  } catch (err) {
+    console.error(err);
+    toast('Unable to update claim status');
+  }
 }
 
 function doLogin() {
