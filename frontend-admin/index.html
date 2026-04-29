@@ -254,7 +254,7 @@
 </div>
 
 <script>
-  const API = 'http://localhost:5000/api';
+  const API = 'https://agri-claim-ai-3.onrender.com/api/claims';
   let allClaims = [], currentClaimId = null;
 
   function adminLogin() {
@@ -369,7 +369,7 @@
       setTimeout(() => { document.getElementById('m-score-bar').style.width = (c.severityScore || 0) + '%'; }, 80);
 
       document.getElementById('m-image').innerHTML = c.imageUrl
-        ? `<img src="http://localhost:5000${c.imageUrl}" class="crop-img" alt="Crop damage"
+        ? `<img src="https://agri-claim-ai-3.onrender.com/api/claims" class="crop-img" alt="Crop damage"
              onerror="this.parentElement.innerHTML='<div class=no-img>📷 Image not available</div>'">`
         : '<div class="no-img">📷 No image uploaded</div>';
 
