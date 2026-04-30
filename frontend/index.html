@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AgriClaim AI</title>
+  <style>
+    /* ============================================================
+       SHARED / ROOT TOKENS
+    ============================================================ */
+    :root {
+      /* Farmer palette */
+      --green: #2d6a4f; --gl: #52b788; --gp: #d8f3dc;
+      --amber: #f4a261; --red: #e63946;
+      --bg: #f0faf3; --card: #ffffff; --text: #1b2d1f; --muted: #6b8f71;
+      --shadow: 0 4px 20px rgba(45,106,79,.12);
+      --shadow-strong: 0 16px 40px rgba(45,106,79,.16);
+      --surface: #edf6f2; --surface-strong: #d8f3dc;
+      --border: rgba(82,183,136,.18);
+      /* Admin palette */
+      --pr:#1a3c5e; --ac:#2d6a4f; --gn:#52b788; --am:#f4a261; --rd:#e63946;
+      --cd:#fff; --tx:#1e293b; --mt:#64748b; --bd:#e2e8f0;
+      --sh:0 2px 12px rgba(0,0,0,.07);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background .4s ease, color .4s ease;
+    }
+
+    /* ============================================================
+       VIEW SWITCHING – only one top-level view visible at a time
+    ============================================================ */
+    .app-view { display: none; }
+    .app-view.active { display: block; }
+
+    /* ============================================================
+       LANDING PAGE
+    ============================================================ */
+    .landing-wrap {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a3c5e 0%, #2d6a4f 100%);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .landing-card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 44px 36px;
+      width: 100%; max-width: 420px;
+      box-shadow: 0 24px 64px rgba(0,0,0,.25);
+      text-align: center;
+    }
+    .landing-logo { font-size: 3rem; margin-bottom: 8px; }
+    .landing-card h1 { font-size: 1.8rem; font-weight: 800; color: #1a3c5e; margin-bottom: 6px; }
+    .landing-card .tagline { font-size: .9rem; color: #64748b; margin-bottom: 36px; line-height: 1.5; }
+    .landing-section-label {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: #64748b; margin-bottom: 12px;
+    }
+    .role-btn {
+      display: flex; align-items: center; gap: 14px;
+      width: 100%; padding: 16px 20px;
+      border-radius: 14px; border: 2px solid #e2e8f0;
+      background: #f8fafc; cursor: pointer;
+      font-family: inherit; text-align: left;
+      transition: all .2s ease; margin-bottom: 12px;
+    }
+    .role-btn:hover { border-color: #2d6a4f; background: #f0faf3; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(45,106,79,.12); }
+    .role-btn.admin-btn:hover { border-color: #1a3c5e; background: #f0f4f8; }
+    .role-icon { font-size: 2rem; width: 48px; text-align: center; }
+    .role-info h3 { font-size: 1rem; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
+    .role-info p { font-size: .78rem; color: #64748b; }
+    .divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #e2e8f0; }
+    .divider span { font-size: .75rem; color: #94a3b8; }
+    .landing-footer { margin-top: 28px; font-size: .73rem; color: #94a3b8; line-height: 1.5; }
+
+    /* ============================================================
+       FARMER PORTAL – nav, hero, main
+    ============================================================ */
+    #view-farmer .card { background: var(--card); border-radius: 16px; padding: 24px; box-shadow: var(--shadow); margin-bottom: 16px; transition: transform .25s ease, box-shadow .25s ease, background .4s ease; color: var(--text); }
+    #view-farmer .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-strong); }
+    #view-admin .card { color: var(--text); }
+    .summary-card, .modal, .admin-login-card { color: var(--text); }
+    #view-farmer nav { transition: background .4s ease, box-shadow .4s ease; }
+    #view-farmer .np { transition: background .25s ease, color .25s ease, transform .2s ease; }
+    #view-farmer .np:hover { transform: translateY(-1px); }
+    #view-farmer .page { display: none; }
+    #view-farmer .page.active { display: block; animation: fadeIn .35s ease forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .copy-btn { border: none; background: var(--green); color: #fff; padding: 7px 12px; border-radius: 999px; font-size: .78rem; cursor: pointer; transition: transform .2s ease, background .2s ease; }
+    .copy-btn:hover { transform: translateY(-1px); background: #1f4f37; }
+    body.dark { --bg:#071019; --card:#0f172a; --text:#f8fafc; --muted:#94a3b8; --shadow:0 12px 32px rgba(0,0,0,.4); --shadow-strong:0 20px 48px rgba(0,0,0,.45); --surface:#111827; --surface-strong:#1e293b; --border:rgba(148,163,184,.18); }
+    body.dark #view-farmer .nav { background: #020617; }
+    body.dark #view-farmer .hero { background: linear-gradient(135deg,#16324f,#0f172a); }
+    body.dark #view-farmer input, body.dark #view-farmer select, body.dark #view-farmer textarea { background:#0f172a; color:#f8fafc; border-color:rgba(148,163,184,.18); }
+    body.dark #view-farmer .upload-zone { background:#0f172a; border-color:rgba(148,163,184,.35); }
+    body.dark .track-row button, body.dark .copy-btn, body.dark .f-btn { background:#256c3d; }
+    body.dark .f-btn:hover { background:#184c2b; }
+
+    .summary-overlay { position: fixed; inset: 0; display: none; background: rgba(0,0,0,.45); align-items: center; justify-content: center; padding: 18px; z-index: 1000; }
+    .summary-overlay.open { display: flex; }
+    .summary-card { background: var(--card); border-radius: 22px; max-width: 520px; width: 100%; padding: 26px; box-shadow: var(--shadow-strong); }
+    .summary-card h2 { margin: 0 0 8px; }
+    .summary-row { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .summary-key { color: var(--muted); font-size: .82rem; }
+    .summary-value { font-weight: 700; }
+    .summary-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .btn-secondary { padding: 11px 16px; border-radius: 12px; border: 1px solid rgba(45,106,79,.2); background: transparent; color: var(--text); cursor: pointer; transition: background .2s ease, transform .2s ease; }
+    .btn-secondary:hover { background: rgba(45,106,79,.08); transform: translateY(-1px); }
+    .summary-close { border: none; background: transparent; color: var(--muted); font-size: 1.2rem; cursor: pointer; }
+
+    /* Farmer nav */
+    #view-farmer nav { background: var(--green); padding: 0 18px; display: flex; align-items: center; justify-content: space-between; height: 62px; box-shadow: 0 2px 10px rgba(0,0,0,.15); position: sticky; top: 0; z-index: 10; }
+    .nav-logo { color: #fff; font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .np { background: rgba(255,255,255,.15); color: #fff; border: none; padding: 5px 14px; border-radius: 20px; cursor: pointer; font-size: .8rem; font-weight: 500; transition: background .2s; font-family: inherit; }
+    .np.active, .np:hover { background: rgba(255,255,255,.3); }
+    .back-btn { background: rgba(255,255,255,.15); color: #fff; border: none; padding: 5px 12px; border-radius: 20px; cursor: pointer; font-size: .8rem; font-weight: 500; font-family: inherit; }
+    .back-btn:hover { background: rgba(255,255,255,.3); }
+
+    /* Farmer hero */
+    .hero { background: linear-gradient(135deg, var(--green), #40916c); color: #fff; text-align: center; padding: 44px 18px 52px; }
+    .hero h1 { font-size: 2rem; font-weight: 800; margin-bottom: 10px; }
+    .hero p { font-size: .92rem; opacity: .88; max-width: 460px; margin: 0 auto; }
+    .scheme-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.2); border-radius: 20px; padding: 3px 14px; font-size: .75rem; margin-bottom: 14px; }
+    #view-farmer main { max-width: 640px; margin: -24px auto 48px; padding: 0 14px; }
+    .card-title { font-size: 1rem; font-weight: 700; color: var(--green); margin-bottom: 18px; display: flex; align-items: center; gap: 7px; }
+    .fg { margin-bottom: 15px; }
+    label { display: block; font-size: .78rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .05em; }
+    #view-farmer input, #view-farmer select, #view-farmer textarea { width: 100%; padding: 11px 13px; border: 2px solid #e2f0e6; border-radius: 10px; font-size: .93rem; background: #fafffe; outline: none; color: var(--text); font-family: inherit; transition: border-color .2s, box-shadow .2s; }
+    #view-farmer input:focus, #view-farmer select:focus, #view-farmer textarea:focus { border-color: var(--gl); box-shadow: 0 0 0 3px rgba(82,183,136,.15); }
+    #view-farmer textarea { resize: vertical; min-height: 86px; }
+    .upload-zone { border: 2px dashed var(--gl); border-radius: 12px; padding: 28px; text-align: center; background: var(--gp); cursor: pointer; position: relative; transition: all .2s; }
+    .upload-zone:hover { background: #c8efd4; border-color: var(--green); }
+    .upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .upload-icon { font-size: 2.3rem; margin-bottom: 8px; }
+    .upload-zone p { color: var(--muted); font-size: .85rem; }
+    #imgPreview { max-width: 100%; max-height: 190px; border-radius: 10px; margin-top: 12px; display: none; }
+    .f-btn { width: 100%; padding: 13px; background: var(--green); color: #fff; border: none; border-radius: 12px; font-size: .97rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: inherit; transition: background .2s, transform .1s; }
+    .f-btn:hover { background: #1b4332; }
+    .f-btn:active { transform: scale(.98); }
+    .f-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+    .badge-farmer { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: .76rem; font-weight: 600; }
+    .badge-pending  { background: #fff3cd; color: #856404; }
+    .badge-review   { background: #cfe2ff; color: #084298; }
+    .badge-approved { background: #d1e7dd; color: #0a3622; }
+    .badge-rejected { background: #f8d7da; color: #842029; }
+    .srow { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f4f0; }
+    .srow:last-child { border-bottom: none; }
+    .slabel { font-size: .8rem; color: var(--muted); font-weight: 500; }
+    .svalue { font-size: .9rem; font-weight: 600; }
+    .meter-bar { height: 10px; background: #e8f5e9; border-radius: 5px; overflow: hidden; margin-top: 5px; }
+    .meter-fill { height: 100%; border-radius: 5px; transition: width 1.2s ease; }
+    .meter-fill.low      { background: #52b788; }
+    .meter-fill.medium   { background: var(--amber); }
+    .meter-fill.high     { background: #e76f51; }
+    .meter-fill.critical { background: var(--red); }
+    .ai-box { background: linear-gradient(135deg, #f0faf3, #e8f5e9); border-left: 4px solid var(--gl); border-radius: 0 10px 10px 0; padding: 13px 15px; font-size: .86rem; line-height: 1.65; margin-top: 7px; }
+    .spin { width: 21px; height: 21px; border: 3px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px); background: #1b2d1f; color: #fff; padding: 10px 22px; border-radius: 30px; font-size: .85rem; font-weight: 500; transition: transform .3s; z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,.2); white-space: nowrap; }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .track-row { display: flex; gap: 9px; }
+    .track-row input { flex: 1; }
+    .track-row button { padding: 11px 16px; background: var(--green); color: #fff; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; font-family: inherit; white-space: nowrap; }
+    .track-row button:hover { background: #1b4332; }
+    .steps { display: flex; margin-bottom: 22px; }
+    .step { flex: 1; text-align: center; position: relative; }
+    .step::after { content: ''; position: absolute; top: 12px; left: 60%; width: 80%; height: 2px; background: #e2f0e6; }
+    .step:last-child::after { display: none; }
+    .step-dot { width: 25px; height: 25px; border-radius: 50%; background: #e2f0e6; color: var(--muted); font-size: .7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 4px; position: relative; z-index: 1; }
+    .step.active .step-dot { background: var(--green); color: #fff; }
+    .step.done .step-dot   { background: var(--gl); color: #fff; }
+    .step-label { font-size: .66rem; color: var(--muted); }
+    .step.active .step-label { color: var(--green); font-weight: 600; }
+    @media (max-width: 480px) { .hero h1 { font-size: 1.6rem; } #view-farmer .card { padding: 18px; } }
+
+    /* ============================================================
+       ADMIN PORTAL
+    ============================================================ */
+    #view-admin { background: var(--bg); }
+    #view-admin .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 235px; background: var(--pr); padding: 22px 0; z-index: 100; }
+    #view-admin .sb-logo { padding: 0 18px 20px; color: #fff; font-size: 1rem; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,.1); }
+    #view-admin .sb-logo span { display: block; font-size: .7rem; opacity: .5; font-weight: 400; margin-top: 1px; }
+    #view-admin .sb-nav { padding: 10px 0; }
+    #view-admin .sb-item { display: flex; align-items: center; gap: 9px; padding: 9px 18px; color: rgba(255,255,255,.65); cursor: pointer; font-size: .85rem; transition: all .2s; }
+    #view-admin .sb-item:hover, #view-admin .sb-item.active { background: rgba(255,255,255,.1); color: #fff; }
+    #view-admin .sb-item .ic { font-size: 1rem; width: 20px; }
+    #view-admin .main { margin-left: 235px; min-height: 100vh; background: #f1f5f9; }
+    #view-admin .topbar { background: #fff; padding: 13px 24px; border-bottom: 1px solid var(--bd); display: flex; align-items: center; justify-content: space-between; box-shadow: var(--sh); }
+    #view-admin .topbar h1 { font-size: 1.05rem; font-weight: 700; }
+    .avatar { width: 32px; height: 32px; background: var(--ac); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: .82rem; }
+    #view-admin .content { padding: 24px; }
+    #view-admin .page { display: none; }
+    #view-admin .page.active { display: block; }
+    .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 13px; margin-bottom: 20px; }
+    .stat-card { background: #fff; border-radius: 11px; padding: 16px; box-shadow: var(--sh); border-left: 4px solid transparent; }
+    .stat-card.blue  { border-left-color: #3b82f6; }
+    .stat-card.green { border-left-color: var(--gn); }
+    .stat-card.amber { border-left-color: var(--am); }
+    .stat-card.red   { border-left-color: var(--rd); }
+    .stat-label { font-size: .73rem; color: var(--mt); font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+    .stat-value { font-size: 1.85rem; font-weight: 800; color: var(--tx); }
+    .stat-sub   { font-size: .7rem; color: var(--mt); margin-top: 2px; }
+    #view-admin .card { background: #fff; border-radius: 11px; box-shadow: var(--sh); overflow: hidden; }
+    .card-header { padding: 13px 17px; border-bottom: 1px solid var(--bd); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 9px; }
+    .card-header h2 { font-size: .92rem; font-weight: 700; color: var(--tx); }
+    .refresh-btn { padding: 5px 13px; background: var(--ac); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: .8rem; font-weight: 600; font-family: inherit; }
+    .refresh-btn:hover { background: #1b4332; }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: #f8fafc; }
+    th { padding: 10px 13px; text-align: left; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--mt); border-bottom: 1px solid var(--bd); }
+    td { padding: 12px 13px; border-bottom: 1px solid var(--bd); font-size: .85rem; color: var(--tx); }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #f8fafc; cursor: pointer; }
+    .pbar { display: flex; align-items: center; gap: 7px; }
+    .ptrack { flex: 1; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+    .pfill { height: 100%; border-radius: 3px; }
+    .pfill.high   { background: var(--rd); }
+    .pfill.medium { background: var(--am); }
+    .pfill.low    { background: var(--gn); }
+    .pval { font-weight: 700; font-size: .8rem; min-width: 24px; color: var(--tx); }
+    .badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: .72rem; font-weight: 600; }
+    .bp { background: #fff3cd; color: #856404; }
+    .br { background: #cfe2ff; color: #084298; }
+    .ba { background: #d1e7dd; color: #0a3622; }
+    .bx { background: #f8d7da; color: #842029; }
+    .bct { background: #fde8e8; color: #842029; }
+    .bhi { background: #fef3cd; color: #856404; }
+    .bme { background: #d1ecf1; color: #0c5460; }
+    .blo { background: #d4edda; color: #155724; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 500; display: none; align-items: center; justify-content: center; padding: 14px; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: #fff; border-radius: 15px; width: 100%; max-width: 660px; max-height: 90vh; overflow-y: auto; }
+    .modal-header { padding: 17px 21px; border-bottom: 1px solid var(--bd); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: #fff; z-index: 1; }
+    .modal-header h2 { font-size: 1rem; font-weight: 700; }
+    .close-btn { background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--mt); }
+    .close-btn:hover { color: var(--tx); }
+    .modal-body { padding: 20px; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-bottom: 16px; }
+    .dl { font-size: .72rem; color: var(--mt); font-weight: 600; text-transform: uppercase; margin-bottom: 2px; }
+    .dv { font-size: .9rem; font-weight: 500; color: var(--tx); }
+    .crop-img { width: 100%; max-height: 230px; object-fit: cover; border-radius: 10px; margin-bottom: 17px; }
+    .no-img { background: #f8fafc; border-radius: 10px; padding: 26px; text-align: center; color: var(--mt); margin-bottom: 17px; font-size: .88rem; }
+    .ai-section { background: linear-gradient(135deg,#f0fdf4,#dcfce7); border-radius: 9px; padding: 13px; margin-bottom: 13px; }
+    .ai-title { font-size: .73rem; font-weight: 700; text-transform: uppercase; color: var(--ac); margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+    .ai-section p { font-size: .85rem; line-height: 1.6; color: var(--tx); }
+    .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-top: 17px; }
+    .btn-approve, .btn-reject { padding: 11px; border: none; border-radius: 9px; font-size: .92rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .btn-approve { background: var(--ac); color: #fff; } .btn-approve:hover { background: #1b4332; }
+    .btn-reject  { background: var(--rd); color: #fff; } .btn-reject:hover  { background: #b02030; }
+    .loading { text-align: center; padding: 36px; color: var(--mt); }
+    .loading-spin { width: 36px; height: 36px; border: 3px solid var(--bd); border-top-color: var(--ac); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 10px; }
+    .filter-sel { padding: 5px 9px; border: 1px solid var(--bd); border-radius: 6px; font-size: .8rem; outline: none; background: #fff; font-family: inherit; }
+    @media (max-width: 900px) { #view-admin .sidebar { width: 55px; } #view-admin .sb-logo, #view-admin .sb-item span { display: none; } #view-admin .main { margin-left: 55px; } .stats-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 600px) { .detail-grid { grid-template-columns: 1fr; } .action-btns { grid-template-columns: 1fr; } }
+    /* Admin login card */
+    .admin-login-wrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--pr); }
+    .admin-login-card { background: #fff; border-radius: 18px; padding: 36px; width: 100%; max-width: 390px; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+    .admin-login-logo { text-align: center; margin-bottom: 24px; }
+    .admin-login-logo h1 { font-size: 1.6rem; font-weight: 800; color: var(--pr); }
+    .admin-login-logo p  { color: var(--mt); font-size: .85rem; }
+    .lfg { margin-bottom: 13px; }
+    .lfg label { display: block; font-size: .78rem; font-weight: 600; color: var(--mt); margin-bottom: 4px; text-transform: none; letter-spacing: 0; }
+    .lfg input { width: 100%; padding: 10px 13px; border: 2px solid var(--bd); border-radius: 8px; font-size: .92rem; outline: none; font-family: inherit; color: var(--tx); }
+    .lfg input:focus { border-color: var(--ac); }
+    .login-btn { width: 100%; padding: 12px; background: var(--pr); color: #fff; border: none; border-radius: 10px; font-size: .92rem; font-weight: 700; cursor: pointer; margin-top: 5px; font-family: inherit; transition: background .2s; }
+    .login-btn:hover { background: var(--ac); }
+  </style>
+</head>
+<body>
+
+<!-- ================================================================
+     TOAST (shared)
+================================================================ -->
+<div id="toast" class="toast"></div>
+
+<!-- ================================================================
+     VIEW: LANDING
+================================================================ -->
+<div id="view-landing" class="app-view active">
+  <div class="landing-wrap">
+    <div class="landing-card">
+      <div class="landing-logo">🌾</div>
+      <h1>AgriClaim AI</h1>
+      <p class="tagline">Smart Crop Damage Assessment powered by Artificial Intelligence<br>PM Fasal Bima Yojana Digital Platform</p>
+
+      <div class="landing-section-label">Select your role to continue</div>
+
+      <button class="role-btn" onclick="goToFarmer()">
+        <div class="role-icon">👨‍🌾</div>
+        <div class="role-info">
+          <h3>I am a Farmer</h3>
+          <p>Submit claims, track status, view AI assessment</p>
+        </div>
+      </button>
+
+      <button class="role-btn admin-btn" onclick="goToAdmin()">
+        <div class="role-icon">🏢</div>
+        <div class="role-info">
+          <h3>I am an Admin Officer</h3>
+          <p>Review claims, approve or reject, view analytics</p>
+        </div>
+      </button>
+
+      <div class="landing-footer">
+        🔒 Secured under PM Fasal Bima Yojana Digital Platform<br>
+        No registration required · Aadhaar-linked mobile
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     VIEW: FARMER PORTAL
+================================================================ -->
+<div id="view-farmer" class="app-view">
+
+  <nav>
+    <div class="nav-logo">🌾 AgriClaim AI</div>
+    <div style="display:flex;gap:5px;align-items:center">
+      <button class="np active" onclick="showFarmerPage('login')">Login</button>
+      <button class="np" onclick="showFarmerPage('submit')">Submit</button>
+      <button class="np" onclick="showFarmerPage('status')">Track</button>
+      <button class="np" id="themeToggle" onclick="toggleTheme()">🌙 Dark</button>
+      <button class="back-btn" onclick="backToLanding()">← Home</button>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <div class="scheme-badge">🇮🇳 PM Fasal Bima Yojana</div>
+    <h1>AgriClaim AI</h1>
+    <p>Smart Crop Damage Assessment powered by Artificial Intelligence</p>
+  </div>
+
+  <main>
+    <!-- LOGIN -->
+    <div id="fp-login" class="page active">
+      <div class="card">
+        <div class="card-title">👨‍🌾 Farmer Login</div>
+        <div class="fg"><label>Mobile Number *</label><input type="tel" id="lPhone" placeholder="10-digit mobile number" maxlength="10"/></div>
+        <div class="fg"><label>Farmer Name *</label><input type="text" id="lName" placeholder="Enter your full name"/></div>
+        <button class="f-btn" onclick="doFarmerLogin()">🔐 Login to Portal</button>
+      </div>
+      <div class="card" style="text-align:center;background:linear-gradient(135deg,#d8f3dc,#b7e4c7)">
+        <p style="font-size:.8rem;color:var(--green);font-weight:600">
+          🔒 Secured under PM Fasal Bima Yojana Digital Platform<br>
+          <span style="font-weight:400;color:var(--muted)">No registration required · Aadhaar-linked mobile</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- SUBMIT CLAIM -->
+    <div id="fp-submit" class="page">
+      <div class="steps">
+        <div class="step done"><div class="step-dot">✓</div><div class="step-label">Login</div></div>
+        <div class="step active"><div class="step-dot">2</div><div class="step-label">Details</div></div>
+        <div class="step"><div class="step-dot">3</div><div class="step-label">Upload</div></div>
+        <div class="step"><div class="step-dot">4</div><div class="step-label">Submit</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 Claim Details</div>
+        <div class="fg"><label>Farmer Name *</label><input type="text" id="farmerName" placeholder="Full name"/></div>
+        <div class="fg"><label>Mobile Number *</label><input type="tel" id="farmerPhone" placeholder="10-digit mobile" maxlength="10"/></div>
+        <div class="fg">
+          <label>Crop Type *</label>
+          <select id="cropType">
+            <option value="">Select crop</option>
+            <option>Wheat</option><option>Rice</option><option>Cotton</option><option>Sugarcane</option>
+            <option>Maize</option><option>Soybean</option><option>Groundnut</option><option>Pulses</option>
+            <option>Tomato</option><option>Onion</option><option>Potato</option><option>Other</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>District *</label>
+          <select id="district">
+            <option value="">Select district</option>
+            <option>Chennai</option><option>Coimbatore</option><option>Madurai</option><option>Tiruchirappalli</option>
+            <option>Salem</option><option>Vellore</option><option>Thanjavur</option><option>Tirunelveli</option>
+            <option>Erode</option><option>Dindigul</option><option>Kanyakumari</option><option>Namakkal</option>
+            <option>Thoothukudi</option><option>Pudukkottai</option><option>Tiruppur</option>
+          </select>
+        </div>
+        <div class="fg"><label>Land Area (Acres) *</label><input type="number" id="landArea" placeholder="e.g. 3.5" min="0.1" step="0.1"/></div>
+        <div class="fg"><label>Damage Description</label><textarea id="description" placeholder="Describe what happened – flood, hailstorm, pest attack, drought, fire…"></textarea></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📸 Upload Crop Damage Photo</div>
+        <div class="upload-zone">
+          <input type="file" id="imageFile" accept="image/*" onchange="previewImage(event)"/>
+          <div class="upload-icon" id="uploadIcon">📷</div>
+          <p id="uploadText"><strong>Tap to upload photo</strong></p>
+          <p>JPG, PNG, WebP · Max 10 MB</p>
+          <img id="imgPreview" alt="preview"/>
+        </div>
+      </div>
+      <button class="f-btn" id="submitBtn" onclick="submitClaim()">🚀 Submit Claim for AI Assessment</button>
+    </div>
+
+    <!-- TRACK STATUS -->
+    <div id="fp-status" class="page">
+      <div class="card">
+        <div class="card-title">🔍 Track Your Claim</div>
+        <div class="track-row">
+          <input type="text" id="claimIdInput" placeholder="Enter Claim ID (PMFBY-XXXXXX-XXX)"/>
+          <button onclick="trackClaim()">Track</button>
+        </div>
+      </div>
+      <div id="statusResult" style="display:none">
+        <div class="card">
+          <div class="card-title">📄 Claim Status</div>
+          <div class="srow"><span class="slabel">Claim ID</span><span style="display:flex;align-items:center;gap:10px"><span class="svalue" id="s-claimId">—</span><button class="copy-btn" onclick="copyClaimId()">Copy</button></span></div>
+          <div class="srow"><span class="slabel">Farmer</span><span class="svalue" id="s-farmer">—</span></div>
+          <div class="srow"><span class="slabel">Crop · District · Area</span><span class="svalue" id="s-crop">—</span></div>
+          <div class="srow"><span class="slabel">Status</span><span id="s-status">—</span></div>
+          <div class="srow"><span class="slabel">Submitted</span><span class="svalue" id="s-date">—</span></div>
+        </div>
+        <div class="card" id="aiResultCard" style="display:none">
+          <div class="card-title">🤖 AI Assessment Result</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <span style="font-weight:600">Damage Severity</span>
+            <span id="s-score" style="font-size:1.4rem;font-weight:800;color:var(--green)">—</span>
+          </div>
+          <div class="meter-bar"><div class="meter-fill" id="s-meter" style="width:0%"></div></div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px">
+            <span style="font-size:.7rem;color:var(--muted)">Low</span>
+            <span style="font-size:.7rem;color:var(--muted)"><span id="s-level">—</span> Damage</span>
+            <span style="font-size:.7rem;color:var(--muted)">Critical</span>
+          </div>
+          <div style="margin-top:14px">
+            <div style="font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:5px">AI EXPLANATION</div>
+            <div class="ai-box" id="s-explanation">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Submit Summary Overlay -->
+  <div class="summary-overlay" id="submitSummary">
+    <div class="summary-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;">
+        <div>
+          <h2>Claim Submitted</h2>
+          <p style="margin:0;color:var(--muted);font-size:.92rem;line-height:1.4;">Your claim has been received and is now queued for AI review.</p>
+        </div>
+        <button class="summary-close" onclick="closeSummary()">✕</button>
+      </div>
+      <div class="summary-row"><span class="summary-key">Claim ID</span><span class="summary-value" id="sum-claimId">—</span></div>
+      <div class="summary-row"><span class="summary-key">Crop Type</span><span class="summary-value" id="sum-crop">—</span></div>
+      <div class="summary-row"><span class="summary-key">District</span><span class="summary-value" id="sum-district">—</span></div>
+      <div class="summary-row"><span class="summary-key">Land Area</span><span class="summary-value" id="sum-area">—</span></div>
+      <div class="summary-row"><span class="summary-key">Status</span><span class="summary-value" id="sum-status">Pending</span></div>
+      <div class="summary-actions">
+        <button class="f-btn" onclick="copyClaimId()">Copy Claim ID</button>
+        <button class="btn-secondary" onclick="showFarmerPage('status'); closeSummary();">Go to Status</button>
+        <button class="btn-secondary" onclick="closeSummary()">Close</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- #view-farmer -->
+
+<!-- ================================================================
+     VIEW: ADMIN PORTAL
+================================================================ -->
+<div id="view-admin" class="app-view">
+
+  <!-- Admin Login -->
+  <div id="adminLoginScreen" class="admin-login-wrap">
+    <div class="admin-login-card">
+      <div class="admin-login-logo">
+        <div style="font-size:2.6rem;margin-bottom:6px">🌾</div>
+        <h1>AgriClaim AI</h1>
+        <p>District Officer Dashboard</p>
+      </div>
+      <div class="lfg"><label>Username</label><input type="text" id="adminUser" value="admin"/></div>
+      <div class="lfg"><label>Password</label><input type="password" id="adminPass" value="admin123"/></div>
+      <button class="login-btn" onclick="adminLogin()">🔐 Login to Dashboard</button>
+      <p style="text-align:center;margin-top:12px;font-size:.76rem;color:var(--mt)">Demo credentials: admin / admin123</p>
+      <p style="text-align:center;margin-top:10px">
+        <button onclick="backToLanding()" style="background:none;border:none;color:var(--mt);cursor:pointer;font-size:.8rem;font-family:inherit">← Back to Home</button>
+      </p>
+    </div>
+  </div>
+
+  <!-- Admin Dashboard -->
+  <div id="adminDashboardScreen" style="display:none">
+    <div class="sidebar">
+      <div class="sb-logo">🌾 AgriClaim AI<span>Admin Portal</span></div>
+      <nav class="sb-nav">
+        <div class="sb-item active" data-page="claims" onclick="showAdminPage('claims')"><span class="ic">📋</span><span>All Claims</span></div>
+        <div class="sb-item" data-page="analytics" onclick="showAdminPage('analytics')"><span class="ic">📊</span><span>Analytics</span></div>
+        <div class="sb-item" onclick="adminLogout()"><span class="ic">🚪</span><span>Logout</span></div>
+      </nav>
+    </div>
+
+    <div class="main">
+      <div class="topbar">
+        <h1 id="pageTitle">All Claims – Priority Sorted</h1>
+        <div style="display:flex;align-items:center;gap:11px">
+          <span style="font-size:.8rem;color:var(--mt)">District Officer</span>
+          <div class="avatar">DO</div>
+        </div>
+      </div>
+
+      <div class="content">
+        <!-- Claims Page -->
+        <div id="ap-claims" class="page active">
+          <div class="stats-grid">
+            <div class="stat-card blue"><div class="stat-label">Total Claims</div><div class="stat-value" id="st-total">—</div><div class="stat-sub">All time</div></div>
+            <div class="stat-card amber"><div class="stat-label">Pending/Review</div><div class="stat-value" id="st-pending">—</div><div class="stat-sub">Awaiting action</div></div>
+            <div class="stat-card green"><div class="stat-label">Approved</div><div class="stat-value" id="st-approved">—</div><div class="stat-sub">Processed</div></div>
+            <div class="stat-card red"><div class="stat-label">Rejected</div><div class="stat-value" id="st-rejected">—</div><div class="stat-sub">Not eligible</div></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h2>📋 Claims Queue (Sorted by Priority)</h2>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <input type="search" class="filter-sel" id="searchClaim" placeholder="Search claim, farmer, district" oninput="renderTable(adminClaims)" />
+                <select class="filter-sel" id="filterStatus" onchange="renderTable(adminClaims)">
+                  <option value="">All Status</option>
+                  <option>Pending</option><option>Under Review</option><option>Approved</option><option>Rejected</option>
+                </select>
+                <button class="refresh-btn" onclick="loadClaims()">🔄 Refresh</button>
+              </div>
+            </div>
+            <div id="tableWrap"><div class="loading"><div class="loading-spin"></div>Loading claims…</div></div>
+          </div>
+        </div>
+
+        <!-- Analytics Page -->
+        <div id="ap-analytics" class="page">
+          <div class="card" style="padding:22px">
+            <h2 style="margin-bottom:18px">📊 District Analytics</h2>
+            <div id="analyticsContent"><p style="color:var(--mt)">Load claims first, then switch to this tab.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Claim Detail Modal -->
+  <div class="modal-overlay" id="claimModal" onclick="onModalOverlayClick(event)">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="m-claimId">Claim Details</h2>
+        <button class="close-btn" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="m-image"></div>
+        <div class="detail-grid">
+          <div><div class="dl">Farmer</div><div class="dv" id="m-farmer">—</div></div>
+          <div><div class="dl">Phone</div><div class="dv" id="m-phone">—</div></div>
+          <div><div class="dl">Crop Type</div><div class="dv" id="m-crop">—</div></div>
+          <div><div class="dl">District</div><div class="dv" id="m-district">—</div></div>
+          <div><div class="dl">Land Area</div><div class="dv" id="m-area">—</div></div>
+          <div><div class="dl">Submitted</div><div class="dv" id="m-date">—</div></div>
+        </div>
+        <div style="margin-bottom:15px"><div class="dl">Farmer's Description</div><div class="dv" id="m-desc" style="font-style:italic;color:var(--mt)"></div></div>
+        <div class="ai-section">
+          <div class="ai-title">👁️ AI Vision Analysis</div>
+          <div style="display:flex;gap:14px;align-items:center;margin-bottom:9px">
+            <div>
+              <div style="font-size:1.8rem;font-weight:800" id="m-score">—</div>
+              <div style="font-size:.74rem;color:var(--mt)">Severity Score</div>
+            </div>
+            <div style="flex:1">
+              <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+                <span style="font-size:.83rem;font-weight:600" id="m-level">—</span>
+                <span class="badge" id="m-level-badge">—</span>
+              </div>
+              <div style="height:9px;background:#e2e8f0;border-radius:4px;overflow:hidden">
+                <div id="m-score-bar" style="height:100%;background:var(--ac);border-radius:4px;transition:width .8s;width:0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ai-section">
+          <div class="ai-title">🧠 LLM Assessment</div>
+          <p id="m-explanation">—</p>
+        </div>
+        <div class="ai-section" style="background:linear-gradient(135deg,#fffbeb,#fef9c3)">
+          <div class="ai-title" style="color:#92400e">⚡ Priority Reasoning</div>
+          <p id="m-reasoning" style="font-style:italic">—</p>
+          <div style="margin-top:9px;display:flex;align-items:center;gap:7px">
+            <span style="font-size:.81rem;color:var(--mt)">Final Priority Score:</span>
+            <span style="font-size:1.35rem;font-weight:800" id="m-priority">—</span>
+            <span style="font-size:.76rem;color:var(--mt)">/100</span>
+          </div>
+        </div>
+        <div id="actionBtns" class="action-btns">
+          <button class="btn-approve" onclick="updateStatus('Approved')">✅ Approve Claim</button>
+          <button class="btn-reject"  onclick="updateStatus('Rejected')">❌ Reject Claim</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- #view-admin -->
+
+<script>
+  // ============================================================
+  // SHARED CONFIG
+  // ============================================================
+  const API = 'https://agri-claim-ai-3.onrender.com/api';
+
+  // ============================================================
+  // SESSION STATE  (role + auth kept in localStorage)
+  // ============================================================
+  const SESSION_KEY = 'agriclaim_session';
+
+  function saveSession(role) {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ role, ts: Date.now() }));
+  }
+
+  function clearSession() {
+    localStorage.removeItem(SESSION_KEY);
+  }
+
+  function getSession() {
+    try { return JSON.parse(localStorage.getItem(SESSION_KEY)); }
+    catch { return null; }
+  }
+
+  // ============================================================
+  // VIEW ROUTING
+  // ============================================================
+  function showView(id) {
+    document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function goToFarmer() {
+    showView('view-farmer');
+    showFarmerPage('login');
+  }
+
+  function goToAdmin() {
+    showView('view-admin');
+    // If already logged in as admin (session), go straight to dashboard
+    const s = getSession();
+    if (s && s.role === 'admin') {
+      showAdminDashboard();
+    } else {
+      document.getElementById('adminLoginScreen').style.display = 'flex';
+      document.getElementById('adminDashboardScreen').style.display = 'none';
+    }
+  }
+
+  function backToLanding() {
+    showView('view-landing');
+  }
+
+  // ============================================================
+  // FARMER PORTAL LOGIC  (unchanged from original)
+  // ============================================================
+  function showFarmerPage(name) {
+    document.querySelectorAll('#view-farmer .page').forEach(p => p.classList.remove('active'));
+    document.getElementById('fp-' + name).classList.add('active');
+    document.querySelectorAll('.np').forEach(btn => {
+      btn.classList.toggle('active', btn.textContent.trim().toLowerCase().startsWith(name));
+    });
+  }
+
+  function toggleTheme() {
+    const mode = document.body.classList.contains('dark') ? 'light' : 'dark';
+    setTheme(mode);
+  }
+
+  function setTheme(mode) {
+    document.body.classList.toggle('dark', mode === 'dark');
+    const themeBtn = document.getElementById('themeToggle');
+    if (themeBtn) themeBtn.textContent = mode === 'dark' ? '☀️ Light' : '🌙 Dark';
+    localStorage.setItem('agriTheme', mode);
+  }
+
+  function initTheme() {
+    const stored = localStorage.getItem('agriTheme');
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setTheme(stored || (prefersDark ? 'dark' : 'light'));
+  }
+
+  function copyClaimId() {
+    const id = document.getElementById('s-claimId')?.textContent.trim();
+    if (!id || id === '—') return showToast('No Claim ID yet');
+    navigator.clipboard.writeText(id).then(() => showToast('Claim ID copied')).catch(() => showToast('Copy failed'));
+  }
+
+  function showToast(message, duration = 3000) {
+    const toastEl = document.getElementById('toast');
+    if (!toastEl) return alert(message);
+    toastEl.textContent = message;
+    toastEl.classList.add('show');
+    clearTimeout(window.toastTimeout);
+    window.toastTimeout = setTimeout(() => toastEl.classList.remove('show'), duration);
+  }
+
+  function previewImage(event) {
+    const file = event.target.files?.[0];
+    const preview = document.getElementById('imgPreview');
+    const icon = document.getElementById('uploadIcon');
+    const text = document.getElementById('uploadText');
+    if (!file) {
+      if (preview) preview.style.display = 'none';
+      if (icon) icon.style.display = 'block';
+      if (text) text.textContent = 'Tap to upload photo';
+      return;
+    }
+    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+    if (icon) icon.style.display = 'none';
+    if (text) text.textContent = file.name;
+  }
+
+  function showSummary(claim) {
+    const overlay = document.getElementById('submitSummary');
+    if (!overlay) return;
+    document.getElementById('sum-claimId').textContent = claim.claimId || '—';
+    document.getElementById('sum-crop').textContent = claim.cropType || '—';
+    document.getElementById('sum-district').textContent = claim.district || '—';
+    document.getElementById('sum-area').textContent = claim.landArea != null ? `${claim.landArea} acres` : '—';
+    document.getElementById('sum-status').textContent = claim.status || 'Pending';
+    overlay.classList.add('open');
+  }
+
+  function closeSummary() {
+    const overlay = document.getElementById('submitSummary');
+    if (overlay) overlay.classList.remove('open');
+  }
+
+  function formatDate(date) {
+    if (!date) return '—';
+    const d = new Date(date);
+    if (isNaN(d)) return '—';
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function renderClaimStatus(c) {
+    document.getElementById('statusResult').style.display = 'block';
+    document.getElementById('s-claimId').textContent = c.claimId || '—';
+    document.getElementById('s-farmer').textContent = c.farmerName || '—';
+    document.getElementById('s-crop').textContent = `${c.cropType || '—'} · ${c.district || '—'} · ${c.landArea != null ? c.landArea + ' acres' : '—'}`;
+    document.getElementById('s-status').textContent = c.status || 'Pending';
+    document.getElementById('s-date').textContent = formatDate(c.createdAt || c.updatedAt);
+    const aiCard = document.getElementById('aiResultCard');
+    if (c.aiProcessed && c.severityScore != null) {
+      aiCard.style.display = 'block';
+      document.getElementById('s-score').textContent = c.severityScore;
+      document.getElementById('s-meter').style.width = `${Math.min(Math.max(c.severityScore, 0), 100)}%`;
+      document.getElementById('s-level').textContent = c.damageLevel || 'Low';
+      document.getElementById('s-explanation').textContent = c.llmExplanation || 'AI explanation will appear here when ready.';
+    } else {
+      aiCard.style.display = 'none';
+    }
+  }
+
+  function doFarmerLogin() {
+    const phone = document.getElementById('lPhone').value.trim();
+    const name  = document.getElementById('lName').value.trim();
+    if (!phone || phone.length < 10) return showToast('Enter valid number');
+    if (!name) return showToast('Enter name');
+    document.getElementById('farmerName').value  = name;
+    document.getElementById('farmerPhone').value = phone;
+    saveSession('farmer');
+    showFarmerPage('submit');
+  }
+
+  async function submitClaim() {
+    const fd = new FormData();
+    fd.append('farmerName', document.getElementById('farmerName').value);
+    fd.append('phone', document.getElementById('farmerPhone').value);
+    fd.append('cropType', document.getElementById('cropType').value);
+    fd.append('district', document.getElementById('district').value);
+    fd.append('landArea', document.getElementById('landArea').value);
+    fd.append('description', document.getElementById('description').value);
+    const file = document.getElementById('imageFile').files[0];
+    if (file) fd.append('image', file);
+    const submitBtn = document.getElementById('submitBtn');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '⏳ Submitting…'; }
+    try {
+      const res = await fetch(`${API}/claims`, { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.success) {
+        showToast('✅ Claim submitted: ' + data.claim.claimId);
+        document.getElementById('claimIdInput').value = data.claim.claimId;
+        showFarmerPage('status');
+        const previewClaim = {
+          ...data.claim,
+          cropType: document.getElementById('cropType').value,
+          district: document.getElementById('district').value,
+          landArea: document.getElementById('landArea').value,
+          description: document.getElementById('description').value,
+          aiProcessed: false, severityScore: null, damageLevel: 'Low',
+          llmExplanation: '', llmReasoning: '', finalPriority: 0,
+          createdAt: new Date().toISOString(),
+        };
+        renderClaimStatus(previewClaim);
+        showSummary(previewClaim);
+      } else {
+        showToast('❌ ' + (data.error || 'Submission failed'));
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('❌ Cannot reach server');
+    } finally {
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '🚀 Submit Claim for AI Assessment'; }
+    }
+  }
+
+  async function trackClaim() {
+    const id = document.getElementById('claimIdInput').value.trim();
+    if (!id) return showToast('Enter Claim ID');
+    try {
+      const res = await fetch(`${API}/claims/${id}`);
+      const data = await res.json();
+      if (!data.success) {
+        showToast(data.error || 'Claim not found');
+        document.getElementById('statusResult').style.display = 'none';
+        return;
+      }
+      renderClaimStatus(data.claim);
+    } catch (err) {
+      console.error(err);
+      showToast('❌ Cannot connect to server');
+    }
+  }
+
+  // ============================================================
+  // ADMIN PORTAL LOGIC  (unchanged from original)
+  // ============================================================
+  let adminClaims = [];
+  let selectedClaimId = null;
+
+  function get(id) { return document.getElementById(id); }
+
+  function showAdminDashboard() {
+    get('adminLoginScreen').style.display = 'none';
+    get('adminDashboardScreen').style.display = 'block';
+    loadClaims();
+  }
+
+  function showAdminPage(name) {
+    document.querySelectorAll('#view-admin .page').forEach(p => p.classList.remove('active'));
+    const el = get('ap-' + name);
+    if (el) el.classList.add('active');
+    document.querySelectorAll('.sb-item[data-page]').forEach(item => {
+      item.classList.toggle('active', item.dataset.page === name);
+    });
+    const titles = { claims: 'All Claims – Priority Sorted', analytics: 'District Analytics' };
+    if (get('pageTitle')) get('pageTitle').textContent = titles[name] || '';
+  }
+
+  function adminLogin() {
+    const user = get('adminUser')?.value.trim();
+    const pass = get('adminPass')?.value.trim();
+    if (!user || !pass) return showToast('Enter username and password');
+    if (user !== 'admin' || pass !== 'admin123') return showToast('Invalid credentials');
+    saveSession('admin');
+    showAdminDashboard();
+  }
+
+  function adminLogout() {
+    clearSession();
+    get('adminDashboardScreen').style.display = 'none';
+    get('adminLoginScreen').style.display = 'flex';
+    backToLanding();
+  }
+
+  async function loadClaims() {
+    const wrap = get('tableWrap');
+    if (wrap) wrap.innerHTML = '<div class="loading"><div class="loading-spin"></div>Loading claims…</div>';
+    try {
+      const res = await fetch(`${API}/claims`);
+      const data = await res.json();
+      if (!data.success || !Array.isArray(data.claims)) {
+        if (wrap) wrap.innerHTML = '<div class="loading">No claims found.</div>';
+        return;
+      }
+      adminClaims = data.claims;
+      renderStats(adminClaims);
+      renderAnalytics(adminClaims);
+      renderTable(adminClaims);
+    } catch (err) {
+      console.error(err);
+      if (wrap) wrap.innerHTML = '<div class="loading">Unable to load claims.</div>';
+    }
+  }
+
+  function renderStats(claims) {
+    if (!claims) return;
+    const pending  = claims.filter(c => c.status === 'Pending' || c.status === 'Under Review').length;
+    const approved = claims.filter(c => c.status === 'Approved').length;
+    const rejected = claims.filter(c => c.status === 'Rejected').length;
+    if (get('st-total'))    get('st-total').textContent    = claims.length;
+    if (get('st-pending'))  get('st-pending').textContent  = pending;
+    if (get('st-approved')) get('st-approved').textContent = approved;
+    if (get('st-rejected')) get('st-rejected').textContent = rejected;
+  }
+
+  function renderAnalytics(claims) {
+    if (!claims) return;
+    const total = claims.length;
+    const avgPriority = total ? (claims.reduce((s, c) => s + (c.finalPriority || 0), 0) / total).toFixed(1) : 0;
+    const districts = claims.reduce((acc, c) => { const k = c.district || 'Unknown'; acc[k] = (acc[k] || 0) + 1; return acc; }, {});
+    const tops = Object.entries(districts).sort((a,b) => b[1]-a[1]).slice(0,4)
+      .map(([d,n]) => `<div style="margin-bottom:8px"><strong>${d}</strong> · ${n} claims</div>`).join('') || '<div style="color:var(--mt)">No claims yet.</div>';
+    const html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div class="stat-card blue" style="padding:18px;"><div class="stat-label">Average Priority</div><div class="stat-value">${avgPriority}</div><div class="stat-sub">Based on all submitted claims</div></div>
+      <div class="stat-card amber" style="padding:18px;"><div class="stat-label">Top Districts</div><div class="stat-sub">${tops}</div></div>
+    </div>`;
+    if (get('analyticsContent')) get('analyticsContent').innerHTML = html;
+  }
+
+  function renderTable(claims) {
+    const filter = get('filterStatus')?.value || '';
+    const search = get('searchClaim')?.value.trim().toLowerCase() || '';
+    const list = (claims || adminClaims).filter(c => {
+      const matchesStatus = !filter || c.status === filter;
+      const text = `${c.claimId||''} ${c.farmerName||''} ${c.cropType||''} ${c.district||''}`.toLowerCase();
+      return matchesStatus && (!search || text.includes(search));
+    });
+    const wrap = get('tableWrap');
+    if (!wrap) return;
+    if (!list.length) { wrap.innerHTML = '<div class="loading">No claims found.</div>'; return; }
+    const rows = list.map(c => `
+      <div style="border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px;display:grid;gap:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+          <strong>${c.claimId || '—'}</strong>
+          <span class="badge ${c.status==='Pending'?'bp':c.status==='Under Review'?'br':c.status==='Approved'?'blo':c.status==='Rejected'?'bx':'bct'}">${c.status||'Unknown'}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.93rem;">
+          <div><strong>Farmer:</strong> ${c.farmerName||'—'}</div>
+          <div><strong>Crop:</strong> ${c.cropType||'—'}</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+          <span style="font-size:.85rem;color:var(--mt);">${c.district||'—'}</span>
+          <button class="login-btn" style="max-width:180px;" onclick="openClaimDetails('${c._id||c.claimId}')">View details</button>
+        </div>
+      </div>`).join('');
+    wrap.innerHTML = rows;
+  }
+
+  function levelBadge(level) {
+    switch (level) {
+      case 'Critical': return { text: 'Critical', cls: 'bx' };
+      case 'High':     return { text: 'High',     cls: 'bhi' };
+      case 'Medium':   return { text: 'Medium',   cls: 'bme' };
+      default:         return { text: 'Low',      cls: 'blo' };
+    }
+  }
+
+  function openClaimDetails(id) {
+    const claim = adminClaims.find(c => c._id === id || c.claimId === id);
+    if (!claim) return showToast('Claim not found');
+    selectedClaimId = id;
+    if (get('m-claimId'))  get('m-claimId').textContent  = claim.claimId || '—';
+    if (get('m-farmer'))   get('m-farmer').textContent   = claim.farmerName || '—';
+    if (get('m-phone'))    get('m-phone').textContent    = claim.phone || '—';
+    if (get('m-crop'))     get('m-crop').textContent     = claim.cropType || '—';
+    if (get('m-district')) get('m-district').textContent = claim.district || '—';
+    if (get('m-area'))     get('m-area').textContent     = claim.landArea != null ? `${claim.landArea} acres` : '—';
+    if (get('m-date'))     get('m-date').textContent     = formatDate(claim.createdAt || claim.updatedAt);
+    if (get('m-desc'))     get('m-desc').textContent     = claim.description || 'No description provided.';
+    const imgContainer = get('m-image');
+    if (imgContainer) {
+      imgContainer.innerHTML = claim.imageUrl
+        ? `<img class="crop-img" src="${claim.imageUrl}" alt="Claim image" onerror="this.style.display='none'" />`
+        : '<div class="no-img">No image uploaded for this claim.</div>';
+    }
+    const score = claim.severityScore != null ? claim.severityScore : 0;
+    const level = claim.damageLevel || 'Low';
+    const badge = levelBadge(level);
+    if (get('m-score')) get('m-score').textContent = score;
+    if (get('m-level')) get('m-level').textContent = level;
+    if (get('m-level-badge')) { get('m-level-badge').textContent = badge.text; get('m-level-badge').className = `badge ${badge.cls}`; }
+    if (get('m-score-bar')) get('m-score-bar').style.width = `${Math.min(Math.max(score,0),100)}%`;
+    if (get('m-explanation')) get('m-explanation').textContent = claim.llmExplanation || 'AI assessment is pending. Please check back later.';
+    if (get('m-reasoning'))   get('m-reasoning').textContent   = claim.llmReasoning   || 'AI analysis will be available once processing completes.';
+    if (get('m-priority'))    get('m-priority').textContent    = claim.finalPriority != null ? claim.finalPriority : 'N/A';
+    const modal = get('claimModal');
+    if (modal) modal.classList.add('open');
+  }
+
+  function onModalOverlayClick(event) {
+    if (event.target === event.currentTarget) closeModal();
+  }
+
+  function closeModal() {
+    const modal = get('claimModal');
+    if (modal) modal.classList.remove('open');
+    selectedClaimId = null;
+  }
+
+  async function updateStatus(status) {
+    if (!selectedClaimId) return showToast('Open a claim first');
+    try {
+      const res = await fetch(`${API}/claims/${selectedClaimId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      const data = await res.json();
+      if (!data.success) return showToast(data.error || 'Failed to update status');
+      showToast(`Claim updated to ${status}`);
+      closeModal();
+      loadClaims();
+    } catch (err) {
+      console.error(err);
+      showToast('Unable to update claim status');
+    }
+  }
+
+  // ============================================================
+  // INIT
+  // ============================================================
+  initTheme();
+  // Restore session if still valid (within 8 hours)
+  (function restoreSession() {
+    const s = getSession();
+    if (!s) return;
+    const age = Date.now() - s.ts;
+    if (age > 8 * 60 * 60 * 1000) { clearSession(); return; } // expired
+    if (s.role === 'farmer') {
+      showView('view-farmer');
+      showFarmerPage('submit');
+    } else if (s.role === 'admin') {
+      showView('view-admin');
+      showAdminDashboard();
+    }
+  })();
+</script>
+</body>
+</html>
