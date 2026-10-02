@@ -2,23 +2,34 @@
   <style>
     .t{font-family:Arial,Helvetica,sans-serif;font-size:15px;fill:#1f3d2e;font-weight:700}
     .s{font-family:Arial,Helvetica,sans-serif;font-size:12px;fill:#5f7568}
-    .flow{stroke:#7b9a68;stroke-width:2;stroke-dasharray:6 6;animation:dash 1.6s linear infinite}
+    .step{animation:stepPulse 5.6s ease-in-out infinite}
+    .step-2{animation-delay:.7s}.step-3{animation-delay:1.4s}.step-4{animation-delay:2.1s}.step-5{animation-delay:2.8s}
+    .flow{stroke:#7b9a68;stroke-width:2.5;stroke-dasharray:6 6;animation:dash 2.4s linear infinite}
+    .flow-dot{fill:#b08a3e;animation:travel 2.4s linear infinite;transform-box:fill-box;transform-origin:center}
+    .flow-dot-2{animation-delay:.6s}.flow-dot-3{animation-delay:1.2s}.flow-dot-4{animation-delay:1.8s}
     @keyframes dash{to{stroke-dashoffset:-24}}
+    @keyframes travel{to{transform:translateX(50px)}}
+    @keyframes stepPulse{0%,100%{stroke:#cfdcc2}50%{stroke:#8caf75}}
+    @media(prefers-reduced-motion:reduce){.step,.flow,.flow-dot{animation:none}}
   </style>
   <rect width="1200" height="190" rx="14" fill="#f7f2e7"/>
   <g>
-    <rect x="30"  y="55" width="170" height="80" rx="12" fill="#fff" stroke="#cfdcc2"/>
+    <rect class="step step-1" x="30"  y="55" width="170" height="80" rx="12" fill="#fff" stroke="#cfdcc2"/>
     <text class="t" x="115" y="90" text-anchor="middle">Claim + Image</text><text class="s" x="115" y="112" text-anchor="middle">multer upload</text>
-    <rect x="250" y="55" width="170" height="80" rx="12" fill="#fff" stroke="#cfdcc2"/>
+    <rect class="step step-2" x="250" y="55" width="170" height="80" rx="12" fill="#fff" stroke="#cfdcc2"/>
     <text class="t" x="335" y="90" text-anchor="middle">vision.js</text><text class="s" x="335" y="112" text-anchor="middle">simulated severity</text>
-    <rect x="470" y="55" width="170" height="80" rx="12" fill="#fff" stroke="#cfdcc2"/>
+    <rect class="step step-3" x="470" y="55" width="170" height="80" rx="12" fill="#fff" stroke="#cfdcc2"/>
     <text class="t" x="555" y="90" text-anchor="middle">llm.js</text><text class="s" x="555" y="112" text-anchor="middle">Groq / OpenAI / mock</text>
-    <rect x="690" y="55" width="170" height="80" rx="12" fill="#fff" stroke="#cfdcc2"/>
+    <rect class="step step-4" x="690" y="55" width="170" height="80" rx="12" fill="#fff" stroke="#cfdcc2"/>
     <text class="t" x="775" y="90" text-anchor="middle">Priority score</text><text class="s" x="775" y="112" text-anchor="middle">weighted 0–100</text>
-    <rect x="910" y="55" width="170" height="80" rx="12" fill="#2d6a4f"/>
+    <rect class="step step-5" x="910" y="55" width="170" height="80" rx="12" fill="#2d6a4f"/>
     <text class="t" x="995" y="90" text-anchor="middle" style="fill:#fff">Admin review</text><text class="s" x="995" y="112" text-anchor="middle" style="fill:#d6e6da">status + SMS</text>
   </g>
   <g class="flow" fill="none">
     <path d="M200 95 H250"/><path d="M420 95 H470"/><path d="M640 95 H690"/><path d="M860 95 H910"/>
   </g>
+  <circle class="flow-dot flow-dot-1" cx="200" cy="95" r="4"/>
+  <circle class="flow-dot flow-dot-2" cx="420" cy="95" r="4"/>
+  <circle class="flow-dot flow-dot-3" cx="640" cy="95" r="4"/>
+  <circle class="flow-dot flow-dot-4" cx="860" cy="95" r="4"/>
 </svg>

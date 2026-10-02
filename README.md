@@ -1,11 +1,8 @@
-# 🌾 CropSure AI
-
-### Smart Crop Damage Assessment & Insurance Claim Support System
+# CropSure AI
 
 <p align="center">
   <img src="assets/README/hero.svg" alt="CropSure AI landscape banner" width="100%" />
 </p>
-
 <p align="center">
   <strong>Crop damage claim support for the PM Fasal Bima Yojana use case</strong><br />
   A hackathon prototype for collecting claims, generating an initial assessment, and organizing administrative review.
@@ -44,6 +41,14 @@ flowchart LR
 ```
 
 The API responds without waiting for background assessment to finish. Poll `GET /api/claims/:id` or `GET /api/claims` to see the updated claim. Without Twilio credentials, SMS events are written to the backend console.
+
+### Claim status
+
+<p align="center">
+  <img src="assets/README/claim-lifecycle.svg" alt="Typical claim status path from Pending through Under Review to an administrative decision" width="100%" />
+</p>
+
+The status API accepts any supported status directly; it does not enforce a transition order. Successful background AI processing sets the claim to `Under Review`. A separate SMS attempt occurs when the status endpoint is used for `Under Review`, `Approved`, or `Rejected`.
 
 ## Quick start
 
@@ -154,7 +159,8 @@ MongoDB defaults to the local `agriclaim` database. If database operations fail,
 AGRI_CLAIM_AI/
 ├── assets/README/
 │   ├── hero.svg
-│   └── claim-pipeline.svg
+│   ├── claim-pipeline.svg
+│   └── claim-lifecycle.svg
 ├── backend/
 │   ├── ai/
 │   │   ├── llm.js

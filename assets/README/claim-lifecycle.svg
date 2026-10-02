@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 310" role="img" aria-labelledby="title description">
+  <title id="title">CropSure AI claim status lifecycle</title>
+  <desc id="description">A newly submitted claim is pending, background assessment can move it to under review, and an API status update can mark it approved or rejected.</desc>
+  <style>
+    .heading{font:700 16px Arial,sans-serif;fill:#355b43;letter-spacing:1px}
+    .title{font:700 20px Arial,sans-serif;fill:#1f3d2e}
+    .copy{font:14px Arial,sans-serif;fill:#65796a}
+    .note{font:13px Arial,sans-serif;fill:#526b5b}
+    .track{fill:none;stroke:#829c78;stroke-width:3;stroke-dasharray:8 9;animation:drift 3.2s linear infinite}
+    .card{fill:#fff;stroke:#cbd9c5;stroke-width:2}
+    .pending{fill:#f4f7ee}
+    .review{fill:#e8f0e4}
+    .approved{fill:#2d6a4f;stroke:#2d6a4f}
+    .rejected{fill:#fff9ec;stroke:#d8c48e}
+    .white{fill:#fff}
+    .travel{fill:#b08a3e}
+    .travel-one{animation:move-one 2.4s ease-in-out infinite alternate}
+    .travel-two{animation:move-two 3s ease-in-out infinite alternate}
+    .pulse{animation:soft-pulse 5s ease-in-out infinite}
+    .pulse-two{animation-delay:1s}.pulse-three{animation-delay:2s}.pulse-four{animation-delay:3s}
+    @keyframes drift{to{stroke-dashoffset:-34}}
+    @keyframes move-one{to{transform:translateX(120px)}}
+    @keyframes move-two{to{transform:translate(155px,-38px)}}
+    @keyframes soft-pulse{0%,100%{stroke:#cbd9c5}50%{stroke:#90ad7c}}
+    @media(prefers-reduced-motion:reduce){.track,.travel-one,.travel-two,.pulse{animation:none}}
+  </style>
+  <rect width="1200" height="310" rx="16" fill="#f3f6ed"/>
+  <text class="heading" x="42" y="42">CLAIM STATUS JOURNEY</text>
+  <text class="copy" x="42" y="66">A typical review path in the prototype</text>
+
+  <path class="track" d="M300 154 H420" marker-end="url(#arrow)"/>
+  <path class="track" d="M700 154 H780 V112 H850" marker-end="url(#arrow)"/>
+  <path class="track" d="M700 154 H780 V220 H850" marker-end="url(#arrow)"/>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#829c78"/>
+    </marker>
+  </defs>
+
+  <rect class="card pending pulse" x="42" y="108" width="258" height="92" rx="12"/>
+  <circle cx="74" cy="142" r="17" fill="#dce8d5"/>
+  <text class="title" x="104" y="145">Pending</text>
+  <text class="copy" x="68" y="178">Claim saved after POST</text>
+
+  <rect class="card review pulse pulse-two" x="420" y="108" width="280" height="92" rx="12"/>
+  <circle cx="454" cy="142" r="17" fill="#c8dbc0"/>
+  <text class="title" x="484" y="145">Under Review</text>
+  <text class="copy" x="446" y="178">Set after successful AI processing</text>
+
+  <rect class="card approved pulse pulse-three" x="850" y="70" width="300" height="84" rx="12"/>
+  <circle cx="884" cy="103" r="17" fill="#ffffff" fill-opacity=".2"/>
+  <text class="title white" x="914" y="107">Approved</text>
+  <text class="copy white" x="876" y="135" fill="#dce9df">Set through the status API</text>
+
+  <rect class="card rejected pulse pulse-four" x="850" y="178" width="300" height="84" rx="12"/>
+  <circle cx="884" cy="211" r="17" fill="#f0e5c8"/>
+  <text class="title" x="914" y="215">Rejected</text>
+  <text class="copy" x="876" y="243">Set through the status API</text>
+
+  <circle class="travel travel-one" cx="300" cy="154" r="5"/>
+  <circle class="travel travel-two" cx="700" cy="154" r="5"/>
+  <text class="note" x="42" y="291">Status values are not transition-locked. PUT status updates attempt SMS for Under Review, Approved, and Rejected.</text>
+</svg>
