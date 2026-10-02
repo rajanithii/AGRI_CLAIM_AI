@@ -169,9 +169,11 @@ AGRI_CLAIM_AI/
 │   ├── middleware/upload.js
 │   ├── models/Claim.js
 │   ├── routes/claims.js
+│   ├── uploadsDir.js
 │   ├── uploads/                 # Runtime uploads
 │   ├── .env.example
 │   ├── package.json
+│   ├── package-lock.json
 │   └── server.js
 ├── frontend/
 │   ├── admin/index.html
@@ -182,11 +184,31 @@ AGRI_CLAIM_AI/
 
 The backend owns the npm dependencies and lockfile. The repository-root `package-lock.json` is empty and there is no root `package.json`.
 
+## Deploy on Vercel
+
+Deploy the Express API from the backend directory:
+
+1. Import this repository into Vercel.
+2. Set **Root Directory** to `backend`. Vercel will detect the Express `server.js` entrypoint and install dependencies from `backend/package-lock.json`.
+3. Leave the default install/build settings in place.
+4. Add the environment variables below in the Vercel project settings, then deploy.
+
+| Variable | Vercel value |
+| --- | --- |
+| `MONGODB_URI` | A reachable hosted MongoDB connection string for shared, persistent claims. |
+| `USE_MOCK_AI` | Set to `true` for a demo without an AI provider key. |
+| `GROQ_API_KEY` or `OPENAI_API_KEY` | Optional; set a provider key and `USE_MOCK_AI=false` to use live LLM responses. |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` | Optional; set all three to send SMS. |
+
+Verify the deployment at `/` and `/api/health`. The root returns API status and endpoint links. If `MONGODB_URI` is omitted, the API can start in demo mode using instance-local memory, but claim data is not durable or shared between Vercel instances.
+
+Vercel function request bodies are limited to 4.5 MB, so image uploads are capped at 4 MB on Vercel (10 MB locally). Vercel uploads use temporary `/tmp` storage and may disappear between instances; use external object storage for durable images. The `frontend/` pages are static mockups and are not part of this backend-root deployment.
+
 ## Current limitations
 
 - The vision score is simulated and does not inspect the submitted photo.
 - The farmer and admin pages are not connected to the API; the admin data is illustrative, not live.
 - The API has no authentication or authorization.
-- Uploaded images are served publicly from `/uploads`.
+- Uploaded images are served publicly; Vercel stores them temporarily and does not provide durable image storage.
 - MongoDB fallback data is in memory and does not persist across restarts.
 - Priority weights and mock assessments are for demonstration only, not validated insurance decisions.

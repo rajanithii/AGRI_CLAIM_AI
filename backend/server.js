@@ -1,6 +1,4 @@
 const path = require('path');
-const fs = require('fs');
-
 // Preflight: show a clear error if dependencies are missing
 const REQUIRED_PACKAGES = [
   'dotenv',
@@ -10,8 +8,6 @@ const REQUIRED_PACKAGES = [
   'multer',
   'axios',
   'twilio',
-  'openai',
-  'uuid',
 ];
 
 const missingPackages = REQUIRED_PACKAGES.filter((pkg) => {
@@ -25,9 +21,7 @@ const missingPackages = REQUIRED_PACKAGES.filter((pkg) => {
 
 if (missingPackages.length) {
   console.error('Missing npm packages:', missingPackages.join(', '));
-  console.error('Fix: from the project root run:');
-  console.error('  cd backend');
-  console.error('  npm install');
+  console.error('Run npm ci from the backend directory before starting the server.');
   process.exit(1);
 }
 
@@ -36,22 +30,41 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 
+if (process.env.VERCEL === '1' && !process.env.MONGODB_URI) {
+  mongoose.set('bufferCommands', false);
+}
+
 const app = express();
 const PORT = process.env.PORT || 5000;
-
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+const uploadsDir = require('./uploadsDir');
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 const claimsRouter = require('./routes/claims');
 app.use('/api/claims', claimsRouter);
+
+app.get('/', (req, res) => {
+  res.json({
+    name: 'CropSure AI API',
+    status: 'ok',
+    health: '/api/health',
+    claims: '/api/claims',
+  });
+});
+
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+app.get(['/favicon.ico', '/favicon.png'], (req, res) => res.status(204).end());
+
+app.get('/uploads/:filename', (req, res, next) => {
+  const filePath = path.join(uploadsDir, path.basename(req.params.filename));
+  res.sendFile(filePath, (err) => {
+    if (err) next(err);
+  });
+});
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -65,8 +78,16 @@ app.get('/api/health', (req, res) => {
 
 // MongoDB connection (falls back to in-memory if unavailable)
 const connectDB = async () => {
+  const mongoUri = process.env.MONGODB_URI ||
+    (process.env.VERCEL === '1' ? null : 'mongodb://localhost:27017/agriclaim');
+
+  if (!mongoUri) {
+    console.warn('⚠️  MONGODB_URI is not set – using in-memory claim storage');
+    return;
+  }
+
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/agriclaim');
+    await mongoose.connect(mongoUri);
     console.log('✅ MongoDB connected');
   } catch (err) {
     console.warn('⚠️  MongoDB not available – using in-memory store:', err.message);

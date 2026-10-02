@@ -32,7 +32,7 @@ async function processClaimAI(claimId, file, cropType, description, district, la
   try {
     console.log(`🤖 AI processing claim ${claimId}…`);
 
-    const imgPath = file ? path.join(__dirname, '../uploads', file.filename) : null;
+    const imgPath = file ? file.path : null;
     const vision  = imgPath
       ? await analyzeCropDamage(imgPath, cropType)
       : { severityScore: Math.floor(Math.random() * 50) + 25, damageLevel: 'Medium', confidence: 80 };
