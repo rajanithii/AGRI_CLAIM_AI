@@ -1,180 +1,381 @@
-# 🌾 CropSure AI – Setup Guide
-## PM Fasal Bima Yojana · Smart Crop Damage Assessment System
+# 🌾 CropSure AI
+
+### Smart Crop Damage Assessment & Insurance Claim Support System
+
+CropSure AI is a hackathon project designed to simplify crop damage assessment and support faster agricultural insurance claim processing.
+
+The system allows farmers to submit crop damage claims with basic land and crop details along with an image. The backend analyzes the submitted claim using AI-based damage assessment and generates a priority score for administrators to review.
+
+> **Built around the PM Fasal Bima Yojana use case.**
 
 ---
 
-## 📁 Folder Structure
+## 🚀 What CropSure AI Does
 
+```text
+Farmer
+  ↓
+Submit Crop Damage Claim
+  ↓
+Upload Crop Image
+  ↓
+AI Damage Assessment
+  ↓
+LLM-based Explanation & Priority
+  ↓
+Final Claim Priority Score
+  ↓
+Admin / District Officer Dashboard
+  ↓
+Approve / Reject Claim
+  ↓
+Farmer Notification
 ```
+
+### Key Features
+
+* 🧑‍🌾 Farmer claim submission portal
+* 📷 Crop damage image upload
+* 🤖 AI-assisted damage assessment
+* 🧠 LLM-generated explanation and reasoning
+* 📊 Claim priority scoring
+* 🏢 Admin / district officer dashboard
+* ✅ Claim approval and rejection
+* 📱 Optional SMS notification through Twilio
+* 🗄️ MongoDB support with in-memory fallback
+* ⚡ Mock AI mode for easy hackathon demonstrations
+
+---
+
+## 📁 Project Structure
+
+```text
 cropsure-ai/
+│
 ├── backend/
-│   ├── server.js                      ← Express server entry point
-│   ├── package.json                   ← Dependencies
-│   ├── .env.example                   ← Copy to .env and configure
+│   ├── server.js
+│   ├── package.json
+│   ├── .env.example
+│   │
 │   ├── routes/
-│   │   └── claims.js                  ← API route definitions
+│   │   └── claims.js
+│   │
 │   ├── controllers/
-│   │   └── claimsController.js        ← Business logic
+│   │   └── claimsController.js
+│   │
 │   ├── ai/
-│   │   ├── vision.js                  ← AI image damage detection
-│   │   └── llm.js                     ← LLM assessment (Groq/OpenAI/Mock)
+│   │   ├── vision.js
+│   │   └── llm.js
+│   │
 │   ├── models/
-│   │   └── Claim.js                   ← MongoDB schema + in-memory fallback
-│   ├── middleware/
-│   │   └── upload.js                  ← Multer image upload handler
-│   ├── uploads/                       ← Auto-created on first run
-│   └── node_modules/                  ← Installed backend dependencies
+│   │   └── Claim.js
+│   │
+│   └── middleware/
+│       └── upload.js
+│
 ├── frontend/
 │   ├── farmer/
-│   │   └── index.html                 ← Farmer mobile web app
+│   │   └── index.html
+│   │
 │   └── admin/
-│       └── index.html                 ← Admin / District Officer dashboard
+│       └── index.html
+│
 ├── .gitignore
 ├── README.md
-└── package.json                       ← Optional workspace scripts
+└── package-lock.json
 ```
+
+> `node_modules/`, `.env`, and uploaded files are excluded from Git through `.gitignore`.
 
 ---
 
-## ⚡ Quick Start (5 Minutes)
+# ⚡ Quick Start
 
-### Step 1 – Install dependencies
+## 1. Clone the repository
+
 ```bash
-cd cropsure-ai/backend
+git clone https://github.com/rajanithii/AGRI_CLAIM_AI.git
+cd AGRI_CLAIM_AI
+```
+
+## 2. Install backend dependencies
+
+```bash
+cd backend
 npm install
 ```
 
-### Step 2 – Configure environment
+## 3. Configure environment variables
+
+Create a `.env` file from the example:
+
+### Windows PowerShell
+
+```powershell
+Copy-Item .env.example .env
+```
+
+### macOS / Linux
+
 ```bash
 cp .env.example .env
 ```
-For hackathon demo: leave `USE_MOCK_AI=true`. No API keys needed!
 
-### Step 3 – Start the backend
+For a basic hackathon demo, keep:
+
+```env
+USE_MOCK_AI=true
+```
+
+This allows the application to run without external AI API keys.
+
+---
+
+## 4. Start the backend
+
 ```bash
 node server.js
 ```
 
-Expected output:
-```
-🌾 ==========================================
-   CropSure AI Server Started
-==========================================
-🚀 Server:     http://localhost:5000
-📡 API Base:   http://localhost:5000/api/claims
-🤖 AI Mode:    Mock (Demo Mode)
-==========================================
+The server runs at:
+
+```text
+http://localhost:5000
 ```
 
-### Step 4 – Open the frontends
-| Portal | How to open |
-|--------|-------------|
-| 🧑‍🌾 Farmer App | Open `frontend/farmer/index.html` in a browser |
-| 🏢 Admin Dashboard | Open `frontend/admin/index.html` in a browser |
+API base:
 
-Admin login: **admin / admin123**
+```text
+http://localhost:5000/api/claims
+```
 
 ---
 
-## 🛠️ Troubleshooting (Module Not Found)
+## 5. Open the frontends
 
-If you see `Error: Cannot find module ...`, it means backend dependencies are not installed in the `backend/` folder.
+### 🧑‍🌾 Farmer Portal
+
+Open:
+
+```text
+frontend/farmer/index.html
+```
+
+### 🏢 Admin Dashboard
+
+Open:
+
+```text
+frontend/admin/index.html
+```
+
+Admin demo credentials:
+
+```text
+Username: admin
+Password: admin123
+```
+
+---
+
+# 🧪 Demo Flow
+
+The complete demonstration can be performed in the following sequence:
+
+1. Open the **Farmer Portal**
+2. Enter farmer details
+3. Select crop and district
+4. Enter land area
+5. Upload a crop image
+6. Submit the claim
+7. Backend processes the claim
+8. AI assessment generates severity information
+9. LLM generates an explanation and priority score
+10. Claim receives a final priority score
+11. Open the **Admin Dashboard**
+12. Review the submitted claim
+13. Inspect the crop image and AI analysis
+14. Approve or reject the claim
+15. Notification is generated for the farmer
+
+---
+
+# 🤖 AI Processing
+
+CropSure AI uses a two-stage AI-assisted assessment flow.
+
+```text
+             Farmer Claim
+                  │
+                  ▼
+          Crop Damage Image
+                  │
+                  ▼
+        ┌──────────────────┐
+        │   Vision Module  │
+        │    vision.js     │
+        └────────┬─────────┘
+                 │
+        Severity + Confidence
+                 │
+                 ▼
+        ┌──────────────────┐
+        │   LLM Module     │
+        │      llm.js      │
+        └────────┬─────────┘
+                 │
+       Explanation + Priority
+                 │
+                 ▼
+        Priority Calculation
+                 │
+                 ▼
+        Admin Review Dashboard
+```
+
+The system supports:
+
+* Groq
+* OpenAI
+* Mock AI mode
+
+The mock mode is intended for demonstrations where external API keys are unavailable.
+
+---
+
+# 🧮 Claim Priority Scoring
+
+The current prototype calculates claim priority using:
+
+```text
+Final Priority
+= (0.5 × AI Severity Score)
++ (0.3 × LLM Priority Score)
++ (0.2 × Land Area Weight)
+```
+
+Land area contribution:
+
+```text
+Land Area Weight
+= min((acres / 10) × 100, 100)
+```
+
+This produces a normalized priority score that can be used to sort claims for administrative review.
+
+---
+
+# 📡 API Reference
+
+| Method | Endpoint                 | Description               |
+| ------ | ------------------------ | ------------------------- |
+| POST   | `/api/claims`            | Submit a new claim        |
+| GET    | `/api/claims`            | Retrieve all claims       |
+| GET    | `/api/claims/:id`        | Retrieve a specific claim |
+| PUT    | `/api/claims/:id/status` | Update claim status       |
+| GET    | `/api/health`            | Check server health       |
+
+---
+
+# 🗄️ Database
+
+CropSure AI supports two storage modes.
+
+### MongoDB
+
+When MongoDB is configured, claims can be persisted across server restarts.
+
+### In-Memory Fallback
+
+If MongoDB is unavailable, the application can use an in-memory store for demonstrations.
+
+> In-memory data is cleared when the backend restarts.
+
+---
+
+# 🔑 Optional Integrations
+
+## Groq
+
+For LLM-powered assessment:
+
+```env
+GROQ_API_KEY=your_key_here
+USE_MOCK_AI=false
+```
+
+## OpenAI
+
+Alternatively:
+
+```env
+OPENAI_API_KEY=your_key_here
+```
+
+## Twilio
+
+For optional SMS notifications:
+
+```env
+TWILIO_ACCOUNT_SID=your_account_sid
+TWILIO_AUTH_TOKEN=your_auth_token
+TWILIO_PHONE_NUMBER=your_phone_number
+```
+
+Without Twilio configuration, notification events can be logged to the backend console for demonstration purposes.
+
+---
+
+# 🛠️ Troubleshooting
+
+### `Cannot find module`
+
+Make sure backend dependencies are installed:
 
 ```bash
-cd cropsure-ai/backend
+cd backend
 npm install
+```
+
+Then start the server:
+
+```bash
 node server.js
 ```
 
-If you still have issues, delete `backend/node_modules` and run `npm install` again.
+### Backend not responding
 
----
+Check:
 
-## 🔑 Optional API Keys (make the demo more impressive)
-
-### Groq – Free & Fast LLM ⭐ Recommended
-1. Get free key at: https://console.groq.com
-2. Add to `.env`: `GROQ_API_KEY=gsk_...`
-3. Set: `USE_MOCK_AI=false`
-
-### OpenAI (alternative)
-1. Get key at: https://platform.openai.com
-2. Add to `.env`: `OPENAI_API_KEY=sk-...`
-
-### Twilio SMS (optional)
-1. Free trial at: https://www.twilio.com
-2. Add to `.env`: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`
-3. SMS will be delivered to real phones!
-
-> Without Twilio keys, SMS messages are logged to the terminal — still impressive for demos.
-
----
-
-## 🧪 Demo Flow (for judges)
-
-1. **Open Farmer App** → Login with any name and phone number
-2. **Fill claim form** → Select crop, district, land area
-3. **Upload a crop photo** → Any image works for demo
-4. **Submit claim** → Watch terminal for AI processing logs
-5. **Open Admin Dashboard** → Claim appears sorted by AI priority score
-6. **Click the claim** → See crop image + AI explanation + LLM reasoning
-7. **Click Approve/Reject** → SMS notification sent (logged in terminal)
-
----
-
-## 📡 API Reference
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/claims` | Submit new claim (multipart/form-data) |
-| `GET`  | `/api/claims` | All claims sorted by finalPriority DESC |
-| `GET`  | `/api/claims/:id` | Single claim by ID or claimId string |
-| `PUT`  | `/api/claims/:id/status` | Admin: update status |
-| `GET`  | `/api/health` | Server health check |
-
----
-
-## 🧮 Priority Scoring Formula
-
-```
-Final Priority = (0.5 × AI Severity Score)
-               + (0.3 × LLM Priority Score)
-               + (0.2 × Land Area Weight)
-
-Land Area Weight = min((acres / 10) × 100, 100)
+```text
+http://localhost:5000/api/health
 ```
 
----
+### AI API errors
 
-## 🗄️ Database
+For a simple demo, use:
 
-The system works in two modes:
-- **With MongoDB**: Persistent storage across restarts
-- **Without MongoDB**: In-memory store (perfect for hackathon demo, data resets on restart)
-
----
-
-## 🤖 AI Architecture
-
-```
-Farmer uploads image
-        ↓
-   vision.js (AI Damage Detection)
-   ├── Analyzes image characteristics
-   ├── Applies crop-specific risk profiles
-   └── Returns: { severityScore, damageLevel, confidence }
-        ↓
-   llm.js (LLM Assessment)
-   ├── Groq / OpenAI / Mock fallback
-   ├── Generates damage explanation
-   └── Returns: { explanation, priorityScore, reasoning }
-        ↓
-   Priority Formula
-   └── finalPriority = 0.5×AI + 0.3×LLM + 0.2×LandWeight
-        ↓
-   Admin dashboard sorted by finalPriority DESC
+```env
+USE_MOCK_AI=true
 ```
 
+This removes the dependency on external AI API keys.
+
 ---
 
-Built for Hackathon 🏆 · CropSure AI · PM Fasal Bima Yojana 🇮🇳
+# 🎯 Project Goal
+
+CropSure AI explores how AI-assisted image analysis, claim prioritization, and administrative dashboards can be combined to support faster and more structured crop damage claim assessment.
+
+The project focuses on reducing manual effort during the initial assessment and helping administrators identify claims that may require earlier attention.
+
+---
+
+## 🏆 Built for Hackathons
+
+**CropSure AI**
+Smart Crop Damage Assessment & Insurance Claim Support System
+
+🌾 Agriculture · 🤖 AI · 📊 Data · 🛡️ Insurance
+
+**GitHub:** `rajanithii/AGRI_CLAIM_AI`
