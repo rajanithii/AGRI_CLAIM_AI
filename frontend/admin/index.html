@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CropSure AI - Admin Dashboard</title>
+    <style>
+      :root {
+        --primary: #1a3c5e;
+        --secondary: #2d6a4f;
+        --bg: #f4f7fb;
+        --card: #ffffff;
+        --text: #1f2937;
+        --muted: #64748b;
+        --border: #e2e8f0;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      .layout {
+        display: flex;
+        min-height: 100vh;
+      }
+      .sidebar {
+        width: 250px;
+        background: linear-gradient(180deg, var(--primary), #15314d);
+        color: white;
+        padding: 22px 18px;
+      }
+      .sidebar h2 {
+        margin: 0 0 20px;
+        font-size: 1.3rem;
+      }
+      .nav {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .nav-item {
+        padding: 12px 14px;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.08);
+        color: white;
+        text-decoration: none;
+        display: block;
+      }
+      .main {
+        flex: 1;
+        padding: 30px;
+      }
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+      .title {
+        margin: 0;
+        font-size: 2rem;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 18px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 22px;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+      }
+      .label {
+        margin: 0 0 8px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--muted);
+      }
+      .value {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 800;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 14px;
+      }
+      th, td {
+        text-align: left;
+        padding: 12px 10px;
+        border-bottom: 1px solid var(--border);
+      }
+      th {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--muted);
+      }
+      .status {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        background: #e0f1e7;
+        color: #1d5c3b;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <h2>AgriClaim Admin</h2>
+        <nav class="nav">
+          <a class="nav-item" href="#">Dashboard</a>
+          <a class="nav-item" href="#">Claims</a>
+          <a class="nav-item" href="#">Priority Queue</a>
+          <a class="nav-item" href="#">Reports</a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <div class="topbar">
+          <h1 class="title">Dashboard Overview</h1>
+          <div class="status">System Live</div>
+        </div>
+
+        <section class="stats">
+          <div class="card">
+            <p class="label">Total Claims</p>
+            <p class="value">148</p>
+          </div>
+          <div class="card">
+            <p class="label">Approved</p>
+            <p class="value">86</p>
+          </div>
+          <div class="card">
+            <p class="label">Pending</p>
+            <p class="value">42</p>
+          </div>
+          <div class="card">
+            <p class="label">High Priority</p>
+            <p class="value">19</p>
+          </div>
+        </section>
+
+        <section class="card" style="margin-top: 24px;">
+          <h3 style="margin-top: 0;">Recent Claims</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Farmer</th>
+                <th>Crop</th>
+                <th>District</th>
+                <th>Priority</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Ramesh</td>
+                <td>Rice</td>
+                <td>Jalgaon</td>
+                <td>92%</td>
+                <td><span class="status">Review</span></td>
+              </tr>
+              <tr>
+                <td>Sita</td>
+                <td>Cotton</td>
+                <td>Nashik</td>
+                <td>78%</td>
+                <td><span class="status">Approved</span></td>
+              </tr>
+              <tr>
+                <td>Ganesh</td>
+                <td>Maize</td>
+                <td>Akola</td>
+                <td>66%</td>
+                <td><span class="status">Pending</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
